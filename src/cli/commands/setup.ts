@@ -69,7 +69,7 @@ const askQuestionWithDefault = (
   Effect.tryPromise({
     try: async () => {
       let prompt: string;
-      const clearHint = defaultValue ? chalk.dim(' (enter - to remove)') : '';
+      const clearHint = defaultValue ? chalk.dim(' (Delete key to remove)') : '';
 
       if (defaultValue && !isSecret) {
         prompt = `${question} ${chalk.dim(`[${defaultValue}]`)}${clearHint}: `;
@@ -78,17 +78,78 @@ const askQuestionWithDefault = (
       } else {
         prompt = `${question}: `;
       }
-      
-      const answer = await rl.question(prompt);
-      const trimmed = answer.trim();
 
-      // Handle dash to clear (Unix convention)
-      if (trimmed === '-') {
-        return '';
+      // For fields without defaults, use standard readline
+      if (!defaultValue) {
+        const answer = await rl.question(prompt);
+        return answer.trim();
       }
 
-      // Return the answer or default value
-      return trimmed || defaultValue || '';
+      // For fields with defaults, implement custom input handling
+      return new Promise<string>((resolve) => {
+        process.stdout.write(prompt);
+        
+        let buffer = '';
+        
+        // Enable raw mode to capture special keys
+        if (process.stdin.isTTY) {
+          process.stdin.setRawMode(true);
+        }
+        process.stdin.resume();
+        
+        const cleanup = () => {
+          if (process.stdin.isTTY) {
+            process.stdin.setRawMode(false);
+          }
+          process.stdin.removeListener('data', onData);
+          process.stdin.pause();
+        };
+        
+        const onData = (chunk: Buffer) => {
+          const key = chunk[0];
+          
+          // Delete/Backspace at start of input (to clear default)
+          if ((key === 127 || key === 8) && buffer.length === 0) {
+            process.stdout.write('\n');
+            cleanup();
+            resolve('');
+            return;
+          }
+          
+          // Enter key
+          if (key === 13 || key === 10) {
+            process.stdout.write('\n');
+            cleanup();
+            resolve(buffer || defaultValue || '');
+            return;
+          }
+          
+          // Ctrl+C
+          if (key === 3) {
+            process.stdout.write('\n');
+            cleanup();
+            process.exit(0);
+            return;
+          }
+          
+          // Backspace (when buffer has content)
+          if ((key === 127 || key === 8) && buffer.length > 0) {
+            buffer = buffer.slice(0, -1);
+            // Clear line and rewrite
+            process.stdout.write('\r\x1b[K' + prompt + buffer);
+            return;
+          }
+          
+          // Regular printable character
+          const char = chunk.toString();
+          if (char.length === 1 && char >= ' ' && char <= '~') {
+            buffer += char;
+            process.stdout.write(char);
+          }
+        };
+        
+        process.stdin.on('data', onData);
+      });
     },
     catch: (error) => new Error(`Failed to get user input: ${error}`),
   });
@@ -127,7 +188,7 @@ const validateAnalysisPromptFile = (
       Effect.tryPromise({
         try: async () => {
           const answer = await rl.question(
-            `Enter a valid path, press Enter to use default, enter - to remove, or type 'keep' to keep existing [${
+            `Enter a valid path, press Enter for default, or type 'keep' to keep existing [${
               existingPath || 'default'
             }]: `,
           );
@@ -137,9 +198,6 @@ const validateAnalysisPromptFile = (
             return existingPath;
           }
           if (trimmed === '' || trimmed === 'keep') {
-            return '';
-          }
-          if (trimmed === '-') {
             return '';
           }
           return answer.trim(); // Return non-lowercased for path
@@ -176,8 +234,8 @@ const setupEffect = (rl: readline.Interface) =>
         Effect.flatMap(() => {
           if (existingConfig) {
             return pipe(
-              Console.log(chalk.dim('(Press Enter to keep existing values, enter - to remove)\n')),
-              Effect.tap(() => Console.log(chalk.dim('Tip: Use "-" to remove optional values like analysis settings\n'))),
+              Console.log(chalk.dim('(Press Enter to keep existing values, Delete/Backspace to remove)\n')),
+              Effect.tap(() => Console.log(chalk.dim('Tip: Press Delete/Backspace at the start to remove optional values\n'))),
             );
           }
           return Effect.succeed(undefined);
