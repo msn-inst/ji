@@ -1,0 +1,74 @@
+{
+  "name": "@aaronshaf/ji",
+  "version": "0.1.1",
+  "description": "Jira CLI with LLM-friendly output",
+  "type": "module",
+  "bin": {
+    "ji": "./src/cli.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aaronshaf/ji.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aaronshaf/ji/issues"
+  },
+  "homepage": "https://github.com/aaronshaf/ji#readme",
+  "scripts": {
+    "dev": "bun run --watch src/cli.ts",
+    "daemon": "bun run src/daemon/index.ts",
+    "test": "NODE_ENV=test bun test",
+    "test:coverage": "NODE_ENV=test bun test --coverage",
+    "test:coverage:report": "NODE_ENV=test bun test --coverage --coverage-reporter=text",
+    "test:coverage:check": "NODE_ENV=test bun test --coverage --coverage-threshold=1",
+    "check-file-sizes": "bun run scripts/check-file-sizes.ts",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "format": "biome format --write",
+    "typecheck": "tsc --noEmit",
+    "ji": "bun run src/cli.ts",
+    "prepublishOnly": "bun run lint && bun run typecheck",
+    "pre-commit": "bun run typecheck && biome check --write && bun run check-file-sizes",
+    "prepare": "node scripts/install-hooks.cjs"
+  },
+  "keywords": [
+    "jira",
+    "confluence",
+    "cli",
+    "sqlite",
+    "daemon"
+  ],
+  "author": "Aaron Shafovaloff <aaronshaf@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@effect/schema": "^0.75.5",
+    "date-fns": "^4.1.0",
+    "effect": "^3.16.10",
+    "ink": "^6.0.1",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "ora": "^8.2.0",
+    "turndown": "^7.2.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.6",
+    "@types/react": "^19.1.8",
+    "@types/turndown": "^5.0.5",
+    "bun-types": "^1.0.20",
+    "fast-check": "^4.2.0",
+    "msw": "^2.10.4",
+    "typescript": "^5.3.3"
+  }
+}

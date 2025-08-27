@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "lib": ["ES2022"],
+    "moduleResolution": "bundler",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "isolatedDeclarations": false, // TODO: Enable after adding explicit return types to all exported functions
+    "types": ["bun-types"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/lib/effects/infrastructure.ts",
+    "src/lib/effects/search-enhancement.ts",
+    "src/cli/commands/setup.ts",
+    "src/test/command-alias-verification.test.ts",
+    "src/test/ji-issue-view-integration.test.ts"
+  ]
+}

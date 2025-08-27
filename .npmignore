@@ -1,0 +1,36 @@
+# Development files
+scripts/
+docs/
+
+# Test files
+*.test.ts
+*.test.js
+test/
+__tests__/
+coverage/
+.coverage/
+
+# Configuration files
+.github/
+.gitignore
+biome.json
+tsconfig.json
+bun.lockb
+.env*
+CLAUDE.md
+
+# Development files
+*.log
+node_modules/
+.DS_Store
+*.swp
+*.swo
+
+# Local data
+~/.ji/
+data.db
+*.db
+
+# Git hooks
+.husky/
+hooks/
