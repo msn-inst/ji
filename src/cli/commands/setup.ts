@@ -194,27 +194,20 @@ const validateAnalysisPromptFile = (
   return pipe(
     Console.error(chalk.red(`\nFile not found: ${path}`)),
     Effect.flatMap(() =>
-      Effect.tryPromise({
-        try: async () => {
-          const answer = await rl.question(
-            `Enter a valid path, press Enter for default, or type 'keep' to keep existing [${
-              existingPath || 'default'
-            }]: `,
-          );
-          const trimmed = answer.trim().toLowerCase();
-
-          if (trimmed === 'keep' && existingPath) {
-            return existingPath;
-          }
-          if (trimmed === '' || trimmed === 'keep') {
-            return '';
-          }
-          return answer.trim(); // Return non-lowercased for path
-        },
-        catch: (error) => new Error(`Failed to get user input: ${error}`),
-      }),
+      askQuestionWithDefault(
+        `Enter a valid path or press Enter for default`,
+        existingPath || '',
+        rl,
+      ),
     ),
-    Effect.flatMap((newPath) => validateAnalysisPromptFile(newPath, existingPath, rl)),
+    Effect.flatMap((newPath) => {
+      // If empty, use default (no custom prompt)
+      if (!newPath) {
+        return Effect.succeed('');
+      }
+      // Otherwise, validate the new path
+      return validateAnalysisPromptFile(newPath, existingPath, rl);
+    }),
   );
 };
 
