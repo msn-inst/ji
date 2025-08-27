@@ -69,12 +69,11 @@ const askQuestionWithDefault = (
   Effect.tryPromise({
     try: async () => {
       let prompt: string;
-      const clearHint = defaultValue ? chalk.dim(' (Delete key to remove)') : '';
 
       if (defaultValue && !isSecret) {
-        prompt = `${question} ${chalk.dim(`[${defaultValue}]`)}${clearHint}: `;
+        prompt = `${question} ${chalk.dim(`[${defaultValue}]`)}: `;
       } else if (defaultValue && isSecret) {
-        prompt = `${question} ${chalk.dim('[<hidden>]')}${clearHint}: `;
+        prompt = `${question} ${chalk.dim('[<hidden>]')}: `;
       } else {
         prompt = `${question}: `;
       }
@@ -113,7 +112,7 @@ const askQuestionWithDefault = (
           // Delete/Backspace at start of input (to clear default)
           if ((key === 127 || key === 8) && buffer.length === 0 && !deletePressed) {
             // Clear the line and rewrite prompt without default
-            const newPrompt = `${question} ${chalk.dim('(cleared)')}: `;
+            const newPrompt = `${question}: `;
             process.stdout.write('\r\x1b[K' + newPrompt);
             // Mark that delete was pressed and clear the default
             deletePressed = true;
@@ -144,7 +143,7 @@ const askQuestionWithDefault = (
             buffer = buffer.slice(0, -1);
             // Clear line and rewrite with appropriate prompt
             const currentPrompt = deletePressed 
-              ? `${question} ${chalk.dim('(cleared)')}: `
+              ? `${question}: `
               : prompt;
             process.stdout.write('\r\x1b[K' + currentPrompt + buffer);
             return;
@@ -243,10 +242,7 @@ const setupEffect = (rl: readline.Interface) =>
         Console.log('\nJira & Confluence CLI Authentication Setup'),
         Effect.flatMap(() => {
           if (existingConfig) {
-            return pipe(
-              Console.log(chalk.dim('(Press Enter to keep existing values, Delete/Backspace to remove)\n')),
-              Effect.tap(() => Console.log(chalk.dim('Tip: Press Delete/Backspace at the start to remove optional values\n'))),
-            );
+            return Console.log(chalk.dim('(Press Enter to keep existing values)\n'));
           }
           return Effect.succeed(undefined);
         }),
