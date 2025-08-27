@@ -69,7 +69,7 @@ const askQuestionWithDefault = (
   Effect.tryPromise({
     try: async () => {
       let prompt: string;
-      const clearHint = defaultValue ? chalk.dim(' (type "clear" to remove)') : '';
+      const clearHint = defaultValue ? chalk.dim(' (enter - to remove)') : '';
 
       if (defaultValue && !isSecret) {
         prompt = `${question} ${chalk.dim(`[${defaultValue}]`)}${clearHint}: `;
@@ -78,11 +78,12 @@ const askQuestionWithDefault = (
       } else {
         prompt = `${question}: `;
       }
+      
       const answer = await rl.question(prompt);
       const trimmed = answer.trim();
 
-      // Handle clear command
-      if (trimmed.toLowerCase() === 'clear') {
+      // Handle dash to clear (Unix convention)
+      if (trimmed === '-') {
         return '';
       }
 
@@ -126,7 +127,7 @@ const validateAnalysisPromptFile = (
       Effect.tryPromise({
         try: async () => {
           const answer = await rl.question(
-            `Enter a valid path, press Enter to use default prompt, type 'clear' to remove, or type 'keep' to keep existing [${
+            `Enter a valid path, press Enter to use default, enter - to remove, or type 'keep' to keep existing [${
               existingPath || 'default'
             }]: `,
           );
@@ -138,7 +139,7 @@ const validateAnalysisPromptFile = (
           if (trimmed === '' || trimmed === 'keep') {
             return '';
           }
-          if (trimmed === 'clear') {
+          if (trimmed === '-') {
             return '';
           }
           return answer.trim(); // Return non-lowercased for path
@@ -175,8 +176,8 @@ const setupEffect = (rl: readline.Interface) =>
         Effect.flatMap(() => {
           if (existingConfig) {
             return pipe(
-              Console.log(chalk.dim('(Press Enter to keep existing values, type "clear" to remove)\n')),
-              Effect.tap(() => Console.log(chalk.dim('Tip: Use "clear" to remove optional values like analysis settings\n'))),
+              Console.log(chalk.dim('(Press Enter to keep existing values, enter - to remove)\n')),
+              Effect.tap(() => Console.log(chalk.dim('Tip: Use "-" to remove optional values like analysis settings\n'))),
             );
           }
           return Effect.succeed(undefined);
