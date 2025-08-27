@@ -499,7 +499,7 @@ Your analysis goes here...
 Do not include anything outside the <response> tags.
 
 `;
-    const fullInput = `${systemPrompt}${prompt}\n\n${fullIssueXml}`;
+    const fullInput = `${systemPrompt}\n\n${prompt}\n\n${fullIssueXml}`;
 
     // Run analysis
     const toolOutput = yield* executeTool(toolCommand, fullInput);

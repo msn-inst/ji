@@ -71,11 +71,40 @@ The analyze command:
 - Use `--comment` flag to post as Jira comment
 - Auto-detects available AI tools or uses configured preference
 
+#### Custom Analysis Prompts
+
+You can customize the AI analysis by providing your own prompt file:
+
+```bash
+ji analyze PROJ-123 --prompt ~/my-prompts/security-review.md
+```
+
+Users are encouraged to create their own analysis prompts tailored to their specific needs. If no custom prompt is specified, ji uses the default prompt located at [`src/assets/default-analysis-prompt.md`](https://github.com/aaronshaf/ji/blob/main/src/assets/default-analysis-prompt.md).
+
+To set a persistent custom prompt, configure it during setup:
+```bash
+ji setup  # Will prompt for analysis prompt file path
+```
+
 ## Documentation
 
 - [**Command Reference**](docs/DOCS.md) - Complete list of commands and options
 - [**Development Guide**](DEVELOPMENT.md) - Setup, architecture, and contributing
 - [**Publishing Guide**](PUBLISHING.md) - NPM package publishing instructions
+
+## Upgrading
+
+To upgrade ji to the latest version:
+
+```bash
+bun update -g @aaronshaf/ji
+```
+
+After upgrading, you may want to review new configuration options:
+
+```bash
+ji setup  # Review and update your configuration
+```
 
 ## Contributing
 

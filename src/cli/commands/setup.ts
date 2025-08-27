@@ -69,15 +69,25 @@ const askQuestionWithDefault = (
   Effect.tryPromise({
     try: async () => {
       let prompt: string;
+      const clearHint = defaultValue ? chalk.dim(' (type "clear" to remove)') : '';
+
       if (defaultValue && !isSecret) {
-        prompt = `${question} ${chalk.dim(`[${defaultValue}]`)}: `;
+        prompt = `${question} ${chalk.dim(`[${defaultValue}]`)}${clearHint}: `;
       } else if (defaultValue && isSecret) {
-        prompt = `${question} ${chalk.dim('[<hidden>]')}: `;
+        prompt = `${question} ${chalk.dim('[<hidden>]')}${clearHint}: `;
       } else {
         prompt = `${question}: `;
       }
       const answer = await rl.question(prompt);
-      return answer.trim() || defaultValue || '';
+      const trimmed = answer.trim();
+
+      // Handle clear command
+      if (trimmed.toLowerCase() === 'clear') {
+        return '';
+      }
+
+      // Return the answer or default value
+      return trimmed || defaultValue || '';
     },
     catch: (error) => new Error(`Failed to get user input: ${error}`),
   });
@@ -116,11 +126,11 @@ const validateAnalysisPromptFile = (
       Effect.tryPromise({
         try: async () => {
           const answer = await rl.question(
-            `Enter a valid path, press Enter to use default prompt, or type 'keep' to keep existing [${
+            `Enter a valid path, press Enter to use default prompt, type 'clear' to remove, or type 'keep' to keep existing [${
               existingPath || 'default'
             }]: `,
           );
-          const trimmed = answer.trim();
+          const trimmed = answer.trim().toLowerCase();
 
           if (trimmed === 'keep' && existingPath) {
             return existingPath;
@@ -128,7 +138,10 @@ const validateAnalysisPromptFile = (
           if (trimmed === '' || trimmed === 'keep') {
             return '';
           }
-          return trimmed;
+          if (trimmed === 'clear') {
+            return '';
+          }
+          return answer.trim(); // Return non-lowercased for path
         },
         catch: (error) => new Error(`Failed to get user input: ${error}`),
       }),
@@ -161,7 +174,10 @@ const setupEffect = (rl: readline.Interface) =>
         Console.log('\nJira & Confluence CLI Authentication Setup'),
         Effect.flatMap(() => {
           if (existingConfig) {
-            return Console.log(chalk.dim('(Press Enter to keep existing values)\n'));
+            return pipe(
+              Console.log(chalk.dim('(Press Enter to keep existing values, type "clear" to remove)\n')),
+              Effect.tap(() => Console.log(chalk.dim('Tip: Use "clear" to remove optional values like analysis settings\n'))),
+            );
           }
           return Effect.succeed(undefined);
         }),
