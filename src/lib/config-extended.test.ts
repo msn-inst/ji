@@ -25,27 +25,27 @@ describe('ConfigManager Extended Tests', () => {
   });
 
   describe('Authentication Management', () => {
-    it('should save and retrieve auth configuration', () => {
+    it('should save and retrieve auth configuration', async () => {
       const authData = {
         jiraUrl: 'https://test.atlassian.net',
         email: 'test@example.com',
         apiToken: 'test-token-123',
       };
 
-      configManager.setConfig(authData);
-      const retrieved = configManager.getConfig();
+      await configManager.setConfig(authData);
+      const retrieved = await configManager.getConfig();
 
       expect(retrieved).toEqual(authData);
     });
 
-    it('should update existing configuration', () => {
+    it('should update existing configuration', async () => {
       const initialAuth = {
         jiraUrl: 'https://old.atlassian.net',
         email: 'old@example.com',
         apiToken: 'old-token',
       };
 
-      configManager.setConfig(initialAuth);
+      await configManager.setConfig(initialAuth);
       
       const updatedAuth = {
         jiraUrl: 'https://new.atlassian.net',
@@ -53,31 +53,31 @@ describe('ConfigManager Extended Tests', () => {
         apiToken: 'new-token',
       };
 
-      configManager.setConfig(updatedAuth);
-      const retrieved = configManager.getConfig();
+      await configManager.setConfig(updatedAuth);
+      const retrieved = await configManager.getConfig();
 
       expect(retrieved).toEqual(updatedAuth);
-      expect(retrieved.jiraUrl).toBe('https://new.atlassian.net');
+      expect(retrieved?.jiraUrl).toBe('https://new.atlassian.net');
     });
 
-    it('should handle missing configuration gracefully', () => {
-      const config = configManager.getConfig();
+    it('should handle missing configuration gracefully', async () => {
+      const config = await configManager.getConfig();
       expect(config).toBeNull();
     });
 
-    it('should persist configuration across instances', () => {
+    it('should persist configuration across instances', async () => {
       const authData = {
         jiraUrl: 'https://persistent.atlassian.net',
         email: 'persist@example.com',
         apiToken: 'persist-token',
       };
 
-      configManager.setConfig(authData);
+      await configManager.setConfig(authData);
       configManager.close();
 
       // Create new instance
       const newConfigManager = new ConfigManager();
-      const retrieved = newConfigManager.getConfig();
+      const retrieved = await newConfigManager.getConfig();
 
       expect(retrieved).toEqual(authData);
       newConfigManager.close();
@@ -105,7 +105,7 @@ describe('ConfigManager Extended Tests', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle invalid JSON in auth config', () => {
+    it('should handle invalid JSON in auth config', async () => {
       const authPath = join(tempDir, 'auth.json');
       writeFileSync(authPath, 'invalid json{', 'utf-8');
 
@@ -117,7 +117,7 @@ describe('ConfigManager Extended Tests', () => {
       manager.close();
     });
 
-    it('should create config directory if it does not exist', () => {
+    it('should create config directory if it does not exist', async () => {
       const nonExistentDir = join(tempDir, 'non-existent', 'nested', 'dir');
       process.env.JI_CONFIG_DIR = nonExistentDir;
 
@@ -128,7 +128,7 @@ describe('ConfigManager Extended Tests', () => {
         apiToken: 'test-token',
       });
 
-      const config = manager.getConfig();
+      const config = await manager.getConfig();
       expect(config).not.toBeNull();
       expect(config?.jiraUrl).toBe('https://test.atlassian.net');
       
@@ -137,14 +137,14 @@ describe('ConfigManager Extended Tests', () => {
   });
 
   describe('Security', () => {
-    it('should create auth.json with restricted permissions', () => {
+    it('should create auth.json with restricted permissions', async () => {
       const authData = {
         jiraUrl: 'https://secure.atlassian.net',
         email: 'secure@example.com',
         apiToken: 'secure-token',
       };
 
-      configManager.setConfig(authData);
+      await configManager.setConfig(authData);
 
       const authPath = join(tempDir, 'auth.json');
       const fs = require('fs');
