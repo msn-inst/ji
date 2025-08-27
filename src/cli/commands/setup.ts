@@ -79,7 +79,7 @@ const askQuestionWithDefault = (
       }
 
       // For fields without defaults, use standard readline
-      if (!defaultValue) {
+      if (defaultValue === undefined || defaultValue === null) {
         const answer = await rl.question(prompt);
         return answer.trim();
       }
@@ -258,7 +258,7 @@ const setupEffect = (rl: readline.Interface) =>
                 askQuestionWithDefault('API Token', existingConfig?.apiToken, rl, true),
                 Effect.flatMap((apiToken: string) =>
                   pipe(
-                    Console.log(`\n${chalk.yellow('Optional: AI Analysis Configuration')}`),
+                    Console.log(chalk.yellow('\nOptional: AI Analysis Configuration')),
                     Effect.flatMap(() =>
                       askQuestionWithDefault(
                         'Analysis tool command (e.g., claude, gemini, opencode)',
