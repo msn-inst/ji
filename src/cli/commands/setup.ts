@@ -286,7 +286,7 @@ const setupEffect = (rl: readline.Interface) =>
         ),
       ),
     ),
-    Effect.tap(() => Console.log('\nVerifying credentials...')),
+    Effect.tap(() => Console.log('Verifying credentials...')),
     Effect.flatMap((config) =>
       pipe(
         verifyCredentials(config),
