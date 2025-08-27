@@ -90,6 +90,8 @@ const askQuestionWithDefault = (
         process.stdout.write(prompt);
         
         let buffer = '';
+        let currentDefault: string | undefined = defaultValue;
+        let deletePressed = false;
         
         // Enable raw mode to capture special keys
         if (process.stdin.isTTY) {
@@ -109,10 +111,13 @@ const askQuestionWithDefault = (
           const key = chunk[0];
           
           // Delete/Backspace at start of input (to clear default)
-          if ((key === 127 || key === 8) && buffer.length === 0) {
-            process.stdout.write('\n');
-            cleanup();
-            resolve('');
+          if ((key === 127 || key === 8) && buffer.length === 0 && !deletePressed) {
+            // Clear the line and rewrite prompt without default
+            const newPrompt = `${question} ${chalk.dim('(cleared)')}: `;
+            process.stdout.write('\r\x1b[K' + newPrompt);
+            // Mark that delete was pressed and clear the default
+            deletePressed = true;
+            currentDefault = undefined;
             return;
           }
           
@@ -120,7 +125,9 @@ const askQuestionWithDefault = (
           if (key === 13 || key === 10) {
             process.stdout.write('\n');
             cleanup();
-            resolve(buffer || defaultValue || '');
+            // If delete was pressed and nothing typed, return empty string
+            // Otherwise return buffer or the current default
+            resolve(deletePressed && buffer === '' ? '' : (buffer || currentDefault || ''));
             return;
           }
           
@@ -135,8 +142,11 @@ const askQuestionWithDefault = (
           // Backspace (when buffer has content)
           if ((key === 127 || key === 8) && buffer.length > 0) {
             buffer = buffer.slice(0, -1);
-            // Clear line and rewrite
-            process.stdout.write('\r\x1b[K' + prompt + buffer);
+            // Clear line and rewrite with appropriate prompt
+            const currentPrompt = deletePressed 
+              ? `${question} ${chalk.dim('(cleared)')}: `
+              : prompt;
+            process.stdout.write('\r\x1b[K' + currentPrompt + buffer);
             return;
           }
           
