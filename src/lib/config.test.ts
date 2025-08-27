@@ -9,7 +9,7 @@ describe('ConfigManager', () => {
     expect(typeof ConfigManager).toBe('function');
   });
 
-  it.skip('should have required methods', () => {
+  it('should have required methods', () => {
     // Create an instance to test methods exist
     let instance: ConfigManager | null = null;
 

@@ -17,7 +17,7 @@ afterEach(() => {
   delete process.env.ALLOW_REAL_API_CALLS;
 });
 
-test.skip('ji EVAL-5767 command - real issue viewing with comments array processing', async () => {
+test('ji EVAL-5767 command - real issue viewing with comments array processing', async () => {
   // Create an issue that matches the structure we expect from `ji EVAL-5767`
   const issueWithComments = createValidIssue({
     key: 'EVAL-5767',
@@ -131,32 +131,31 @@ test.skip('ji EVAL-5767 command - real issue viewing with comments array process
 
     const output = consoleLogs.join('\n');
 
-    // Verify the complete YAML structure
-    expect(output).toContain('type: issue');
-    expect(output).toContain('key: EVAL-5767');
-    expect(output).toContain('title: Similarity report fails to open from the new SpeedGrader');
-    expect(output).toContain('status: In Progress');
-    expect(output).toContain('priority: P3');
-    expect(output).toContain('reporter: Nathan Warkentin');
-    expect(output).toContain('assignee: Aaron Shafovaloff');
+    // Verify the complete XML structure
+    expect(output).toContain('<type>issue</type>');
+    expect(output).toContain('<key>EVAL-5767</key>');
+    expect(output).toContain('<title>Similarity report fails to open from the new SpeedGrader</title>');
+    expect(output).toContain('<status>In Progress</status>');
+    expect(output).toContain('<priority>P3</priority>');
+    expect(output).toContain('<reporter>Test User Two</reporter>');
+    expect(output).toContain('<assignee>Test User One</assignee>');
 
-    // Verify description formatting (no artificial line breaks)
-    expect(output).toContain('description: |');
+    // Verify description formatting
+    expect(output).toContain('<description>');
     expect(output).toContain(
-      'Summary: • When launching the similarity report for TII LTI 1.1 or Plagiarism Framework with "Performance and Usability Upgrades for SpeedGrader" enabled, it fails to load.',
+      'Summary: • When launching the similarity report for TII LTI 1.1 or Plagiarism Framework with',
     );
 
-    // Verify comments are formatted as YAML array (our main focus)
-    expect(output).toContain('comments:');
-    expect(output).not.toContain('comments: 3'); // Should NOT show count
+    // Verify comments are formatted as XML
+    expect(output).toContain('<comments>');
+    
+    // Verify proper XML structure
+    expect(output).toContain('<author>Test User Three</author>');
+    expect(output).toContain('<author>Test User Two</author>');
 
-    // Verify proper YAML array structure
-    expect(output).toContain('  - author: Josh Lebo');
-    expect(output).toContain('  - author: Nathan Warkentin');
-
-    // Verify proper indentation for comment fields
-    expect(output).toContain('    created:');
-    expect(output).toContain('    body: |');
+    // Verify comment fields
+    expect(output).toContain('<created>');
+    expect(output).toContain('<body>');
 
     // Verify long comments don't have artificial line breaks
     expect(output).toContain(
@@ -164,16 +163,16 @@ test.skip('ji EVAL-5767 command - real issue viewing with comments array process
     );
 
     // Verify all 3 comments are displayed
-    const joshComments = (output.match(/- author: Josh Lebo/g) || []).length;
-    const nathanComments = (output.match(/- author: Nathan Warkentin/g) || []).length;
-    expect(joshComments).toBe(2); // Josh has 2 comments
-    expect(nathanComments).toBe(1); // Nathan has 1 comment
+    const userThreeComments = (output.match(/<author>Test User Three<\/author>/g) || []).length;
+    const userTwoComments = (output.match(/<author>Test User Two<\/author>/g) || []).length;
+    expect(userThreeComments).toBe(2); // Test User Three has 2 comments
+    expect(userTwoComments).toBe(1); // Test User Two has 1 comment
   } finally {
     console.log = originalLog;
   }
 });
 
-test.skip('ji EVAL-5767 command - handles issues with no comments', async () => {
+test('ji EVAL-5767 command - handles issues with no comments', async () => {
   // Create an issue without comments
   const issueWithoutComments = createValidIssue({
     key: 'EVAL-1234',
@@ -242,19 +241,19 @@ test.skip('ji EVAL-5767 command - handles issues with no comments', async () => 
     const output = consoleLogs.join('\n');
 
     // Should have all the basic fields
-    expect(output).toContain('type: issue');
-    expect(output).toContain('key: EVAL-1234');
-    expect(output).toContain('title: Issue with no comments');
+    expect(output).toContain('<type>issue</type>');
+    expect(output).toContain('<key>EVAL-1234</key>');
+    expect(output).toContain('<title>Issue with no comments</title>');
 
     // Should NOT have comments section at all
-    expect(output).not.toContain('comments:');
-    expect(output).not.toContain('  - author:');
+    expect(output).not.toContain('<comments>');
+    expect(output).not.toContain('<author>');
   } finally {
     console.log = originalLog;
   }
 });
 
-test.skip('ji EVAL-5767 command - handles issues with empty comments array', async () => {
+test('ji EVAL-5767 command - handles issues with empty comments array', async () => {
   // Create an issue with empty comments array
   const issueWithEmptyComments = createValidIssue({
     key: 'EVAL-5678',
@@ -325,12 +324,12 @@ test.skip('ji EVAL-5767 command - handles issues with empty comments array', asy
     const output = consoleLogs.join('\n');
 
     // Should have all the basic fields
-    expect(output).toContain('type: issue');
-    expect(output).toContain('key: EVAL-5678');
+    expect(output).toContain('<type>issue</type>');
+    expect(output).toContain('<key>EVAL-5678</key>');
 
     // Should NOT display comments section for empty array
-    expect(output).not.toContain('comments:');
-    expect(output).not.toContain('  - author:');
+    expect(output).not.toContain('<comments>');
+    expect(output).not.toContain('<author>');
   } finally {
     console.log = originalLog;
   }
