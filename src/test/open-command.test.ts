@@ -166,7 +166,7 @@ test('ji open - validates issue key format', async () => {
   }
 });
 
-test.skip('ji open - handles missing configuration', async () => {
+test('ji open - handles missing configuration', async () => {
   // Remove auth file to simulate missing config
   rmSync(TEST_AUTH_PATH, { force: true });
 

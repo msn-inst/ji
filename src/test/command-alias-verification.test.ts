@@ -17,7 +17,7 @@ afterEach(() => {
 
 // NOTE: This test is skipped in CI because it requires file system access
 // and SQLite database operations that are not available in the CI environment
-test.skip('ji EVAL-5767 and ji issue view EVAL-5767 are identical aliases', async () => {
+test('ji EVAL-5767 and ji issue view EVAL-5767 are identical aliases', async () => {
   // Create test issue
   const testIssue = createValidIssue({
     key: 'ALIAS-123',
@@ -87,9 +87,10 @@ test.skip('ji EVAL-5767 and ji issue view EVAL-5767 are identical aliases', asyn
   process.env.ALLOW_REAL_API_CALLS = 'true';
 
   // Initialize database first to avoid migration messages during output capture
-  const { CacheManager } = await import('../lib/cache');
-  const cacheManager = new CacheManager();
-  cacheManager.close(); // Just initialize the DB, then close
+  // CacheManager has been refactored, skip this initialization
+  // const { CacheManager } = await import('../lib/cache');
+  // const cacheManager = new CacheManager();
+  // cacheManager.close(); // Just initialize the DB, then close
 
   // Capture output from direct issue key command
   const directOutput: string[] = [];
@@ -167,18 +168,18 @@ test.skip('ji EVAL-5767 and ji issue view EVAL-5767 are identical aliases', asyn
   const directOutputString = directOutput.join('\n');
   const explicitOutputString = explicitOutput.join('\n');
 
-  // Both should have the same basic structure
-  expect(directOutputString).toContain('type: issue');
-  expect(directOutputString).toContain('key: ALIAS-123');
-  expect(directOutputString).toContain('title: Test issue for alias verification');
-  expect(directOutputString).toContain('comments:');
-  expect(directOutputString).toContain('  - author: Test Commenter');
+  // Both should have the same basic XML structure
+  expect(directOutputString).toContain('<type>issue</type>');
+  expect(directOutputString).toContain('<key>ALIAS-123</key>');
+  expect(directOutputString).toContain('<title>Test issue for alias verification</title>');
+  expect(directOutputString).toContain('<comments>');
+  expect(directOutputString).toContain('<author>Test Commenter</author>');
 
-  expect(explicitOutputString).toContain('type: issue');
-  expect(explicitOutputString).toContain('key: ALIAS-123');
-  expect(explicitOutputString).toContain('title: Test issue for alias verification');
-  expect(explicitOutputString).toContain('comments:');
-  expect(explicitOutputString).toContain('  - author: Test Commenter');
+  expect(explicitOutputString).toContain('<type>issue</type>');
+  expect(explicitOutputString).toContain('<key>ALIAS-123</key>');
+  expect(explicitOutputString).toContain('<title>Test issue for alias verification</title>');
+  expect(explicitOutputString).toContain('<comments>');
+  expect(explicitOutputString).toContain('<author>Test Commenter</author>');
 
   // Most importantly - they should be character-for-character identical
   expect(directOutputString).toBe(explicitOutputString);
