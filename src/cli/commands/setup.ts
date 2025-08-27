@@ -192,7 +192,7 @@ const validateAnalysisPromptFile = (
 
   // File doesn't exist, prompt user for action
   return pipe(
-    Console.error(chalk.red(`\nFile not found: ${path}`)),
+    Console.error(chalk.red(`File not found: ${path}`)),
     Effect.flatMap(() =>
       askQuestionWithDefault(
         `Enter a valid path or press Enter for default`,
@@ -251,7 +251,7 @@ const setupEffect = (rl: readline.Interface) =>
                 askQuestionWithDefault('API Token', existingConfig?.apiToken, rl, true),
                 Effect.flatMap((apiToken: string) =>
                   pipe(
-                    Console.log(chalk.yellow('\nOptional: AI Analysis Configuration')),
+                    Console.log(chalk.yellow('Optional: AI Analysis Configuration')),
                     Effect.flatMap(() =>
                       askQuestionWithDefault(
                         'Analysis tool command (e.g., claude, gemini, opencode)',
