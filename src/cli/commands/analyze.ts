@@ -432,9 +432,16 @@ const analyzeIssueEffect = (
   },
 ): Effect.Effect<void, AnalyzeError | null> =>
   Effect.gen(function* () {
+    // Extract issue key from URL if provided
+    let extractedKey = issueKey;
+    const urlMatch = issueKey.match(/\/browse\/([A-Z]+-\d+)/);
+    if (urlMatch?.[1]) {
+      extractedKey = urlMatch[1];
+    }
+
     // Validate issue key
-    yield* Schema.decodeUnknown(IssueKeySchema)(issueKey).pipe(
-      Effect.mapError(() => new ConfigurationError(`Invalid issue key: ${issueKey}`)),
+    yield* Schema.decodeUnknown(IssueKeySchema)(extractedKey).pipe(
+      Effect.mapError(() => new ConfigurationError(`Invalid issue key: ${extractedKey}`)),
     );
 
     // Validate options
@@ -474,7 +481,7 @@ const analyzeIssueEffect = (
     const prompt = yield* loadPrompt(options.prompt);
 
     // Fetch and format issue
-    const fetchResult = yield* fetchIssue(issueKey);
+    const fetchResult = yield* fetchIssue(extractedKey);
     const issue = fetchResult.issue;
     const issueConfig = fetchResult.config;
 
@@ -483,7 +490,7 @@ const analyzeIssueEffect = (
 
     // Fetch comments
     const jiraClient = new JiraClient(issueConfig);
-    const commentsXml = yield* fetchComments(issueKey, jiraClient).pipe(
+    const commentsXml = yield* fetchComments(extractedKey, jiraClient).pipe(
       Effect.orElse(() => Effect.succeed('')), // Continue even if comments fail
     );
 
@@ -526,7 +533,7 @@ Do not include anything outside the <response> tags.
 
     if (shouldPost) {
       yield* Console.log('Posting comment...');
-      yield* postComment(issueKey, response);
+      yield* postComment(extractedKey, response);
       yield* Console.log(chalk.green('✓ Comment posted successfully'));
     } else {
       yield* Console.log(chalk.yellow('Comment not posted'));
