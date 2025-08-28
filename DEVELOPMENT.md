@@ -45,7 +45,7 @@ bun link
 # Set up Jira credentials
 ji setup
 
-# Or manually create ~/.ji/auth.json
+# Or manually create ~/.ji/config.json
 {
   "jiraUrl": "https://your-domain.atlassian.net",
   "username": "your-email@example.com",
@@ -409,7 +409,7 @@ Key files for npm publishing:
 
 ```bash
 # Check credentials
-cat ~/.ji/auth.json
+cat ~/.ji/config.json
 
 # Re-run setup
 ji setup

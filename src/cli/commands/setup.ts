@@ -1,9 +1,8 @@
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
-import { stdin as input, stdout as output } from 'node:process';
-import * as readline from 'node:readline/promises';
 import chalk from 'chalk';
+import { input, password } from '@inquirer/prompts';
 import { Console, Effect, pipe } from 'effect';
 import { ConfigManager } from '../../lib/config.js';
 
@@ -59,110 +58,6 @@ const saveConfig = (config: {
     catch: (error) => new Error(`Failed to save configuration: ${error}`),
   });
 
-// Effect wrapper for readline operations with default value
-const askQuestionWithDefault = (
-  question: string,
-  defaultValue: string | undefined,
-  rl: readline.Interface,
-  isSecret = false,
-) =>
-  Effect.tryPromise({
-    try: async () => {
-      let prompt: string;
-
-      if (defaultValue && !isSecret) {
-        prompt = `${question} ${chalk.dim(`[${defaultValue}]`)}: `;
-      } else if (defaultValue && isSecret) {
-        prompt = `${question} ${chalk.dim('[<hidden>]')}: `;
-      } else {
-        prompt = `${question}: `;
-      }
-
-      // For fields without defaults, use standard readline
-      if (defaultValue === undefined || defaultValue === null) {
-        const answer = await rl.question(prompt);
-        return answer.trim();
-      }
-
-      // For fields with defaults, implement custom input handling
-      return new Promise<string>((resolve) => {
-        process.stdout.write(prompt);
-        
-        let buffer = '';
-        let currentDefault: string | undefined = defaultValue;
-        let deletePressed = false;
-        
-        // Enable raw mode to capture special keys
-        if (process.stdin.isTTY) {
-          process.stdin.setRawMode(true);
-        }
-        process.stdin.resume();
-        
-        const cleanup = () => {
-          if (process.stdin.isTTY) {
-            process.stdin.setRawMode(false);
-          }
-          process.stdin.removeListener('data', onData);
-          process.stdin.pause();
-        };
-        
-        const onData = (chunk: Buffer) => {
-          const key = chunk[0];
-          
-          // Delete/Backspace at start of input (to clear default)
-          if ((key === 127 || key === 8) && buffer.length === 0 && !deletePressed) {
-            // Clear the line and rewrite prompt without default
-            const newPrompt = `${question}: `;
-            process.stdout.write('\r\x1b[K' + newPrompt);
-            // Mark that delete was pressed and clear the default
-            deletePressed = true;
-            currentDefault = undefined;
-            return;
-          }
-          
-          // Enter key
-          if (key === 13 || key === 10) {
-            process.stdout.write('\n');
-            cleanup();
-            // If delete was pressed and nothing typed, return empty string
-            // Otherwise return buffer or the current default
-            resolve(deletePressed && buffer === '' ? '' : (buffer || currentDefault || ''));
-            return;
-          }
-          
-          // Ctrl+C
-          if (key === 3) {
-            process.stdout.write('\n');
-            cleanup();
-            process.exit(0);
-            return;
-          }
-          
-          // Backspace (when buffer has content)
-          if ((key === 127 || key === 8) && buffer.length > 0) {
-            buffer = buffer.slice(0, -1);
-            // Clear line and rewrite with appropriate prompt
-            const currentPrompt = deletePressed 
-              ? `${question}: `
-              : prompt;
-            process.stdout.write('\r\x1b[K' + currentPrompt + buffer);
-            return;
-          }
-          
-          // Regular printable character
-          const char = chunk.toString();
-          if (char.length === 1 && char >= ' ' && char <= '~') {
-            buffer += char;
-            process.stdout.write(char);
-          }
-        };
-        
-        process.stdin.on('data', onData);
-      });
-    },
-    catch: (error) => new Error(`Failed to get user input: ${error}`),
-  });
-
 // Helper to expand tilde in file paths
 const expandTilde = (path: string): string => {
   if (path.startsWith('~/')) {
@@ -171,44 +66,18 @@ const expandTilde = (path: string): string => {
   return path;
 };
 
-// Effect wrapper for validating analysis prompt file path
-const validateAnalysisPromptFile = (
-  path: string,
-  existingPath: string | undefined,
-  rl: readline.Interface,
-): Effect.Effect<string, Error> => {
-  // If path is empty, use default (no custom prompt)
+// Validate analysis prompt file path
+const validateAnalysisPromptFile = (path: string): string | undefined => {
   if (!path) {
-    return Effect.succeed('');
+    return undefined;
   }
 
-  // Expand tilde if present
   const expandedPath = expandTilde(path);
-
-  // Check if file exists
   if (existsSync(expandedPath)) {
-    return Effect.succeed(path); // Return the original path (with tilde) for storage
+    return path;
   }
 
-  // File doesn't exist, prompt user for action
-  return pipe(
-    Console.error(chalk.red(`File not found: ${path}`)),
-    Effect.flatMap(() =>
-      askQuestionWithDefault(
-        `Enter a valid path or press Enter for default`,
-        existingPath || '',
-        rl,
-      ),
-    ),
-    Effect.flatMap((newPath) => {
-      // If empty, use default (no custom prompt)
-      if (!newPath) {
-        return Effect.succeed('');
-      }
-      // Otherwise, validate the new path
-      return validateAnalysisPromptFile(newPath, existingPath, rl);
-    }),
-  );
+  return undefined;
 };
 
 // Effect wrapper for getting existing config
@@ -226,67 +95,98 @@ const getExistingConfig = () =>
     catch: () => null, // Return null if no config exists
   });
 
-// Pure Effect-based setup implementation
-const setupEffect = (rl: readline.Interface) =>
+// Pure Effect-based setup implementation using inquirer
+const setupEffect = () =>
   pipe(
     getExistingConfig(),
     Effect.flatMap((existingConfig) =>
       pipe(
-        Console.log('\nJira & Confluence CLI Authentication Setup'),
+        Console.log('Jira & Confluence CLI Authentication Setup'),
         Effect.flatMap(() => {
           if (existingConfig) {
-            return Console.log(chalk.dim('(Press Enter to keep existing values)\n'));
+            return Console.log(chalk.dim('(Press Enter to keep existing values)'));
           }
           return Effect.succeed(undefined);
         }),
         Effect.flatMap(() =>
-          askQuestionWithDefault('Jira URL (e.g., https://company.atlassian.net)', existingConfig?.jiraUrl, rl),
-        ),
-        Effect.map((jiraUrl: string) => (jiraUrl.endsWith('/') ? jiraUrl.slice(0, -1) : jiraUrl)),
-        Effect.flatMap((jiraUrl) =>
-          pipe(
-            askQuestionWithDefault('Email', existingConfig?.email, rl),
-            Effect.flatMap((email: string) =>
-              pipe(
-                askQuestionWithDefault('API Token', existingConfig?.apiToken, rl, true),
-                Effect.flatMap((apiToken: string) =>
-                  pipe(
-                    Console.log(chalk.yellow('Optional: AI Analysis Configuration')),
-                    Effect.flatMap(() =>
-                      askQuestionWithDefault(
-                        'Analysis tool command (e.g., claude, gemini, opencode)',
-                        existingConfig?.analysisCommand || '',
-                        rl,
-                      ),
-                    ),
-                    Effect.flatMap((analysisCommand: string) =>
-                      pipe(
-                        askQuestionWithDefault(
-                          'Path to custom analysis prompt file (optional)',
-                          existingConfig?.analysisPrompt || '',
-                          rl,
-                        ),
-                        Effect.flatMap((analysisPrompt: string) =>
-                          validateAnalysisPromptFile(analysisPrompt, existingConfig?.analysisPrompt, rl),
-                        ),
-                        Effect.map((analysisPrompt: string) => ({
-                          jiraUrl,
-                          email,
-                          apiToken,
-                          ...(analysisCommand && { analysisCommand }),
-                          ...(analysisPrompt && { analysisPrompt }),
-                        })),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          Effect.tryPromise({
+            try: async () => {
+              console.log('');
+
+              // Jira URL
+              const jiraUrl = await input({
+                message: 'Jira URL (e.g., https://company.atlassian.net)',
+                default: existingConfig?.jiraUrl,
+              });
+
+              // Email
+              const email = await input({
+                message: 'Email',
+                default: existingConfig?.email,
+              });
+
+              // API Token
+              const apiToken =
+                (await password({
+                  message: 'API Token',
+                })) ||
+                existingConfig?.apiToken ||
+                '';
+
+              console.log('');
+              console.log(chalk.yellow('Optional: AI Analysis Configuration'));
+
+              // Analysis command
+              const analysisCommand = await input({
+                message: 'Analysis tool command (e.g., claude, gemini, opencode)',
+                default: existingConfig?.analysisCommand || '',
+              });
+
+              // Analysis prompt file
+              let analysisPrompt = await input({
+                message: 'Path to custom analysis prompt file (optional)',
+                default: existingConfig?.analysisPrompt || '',
+              });
+
+              // Validate the prompt file if provided
+              if (analysisPrompt) {
+                const validated = validateAnalysisPromptFile(analysisPrompt);
+                if (!validated) {
+                  console.log(chalk.red(`File not found: ${analysisPrompt}`));
+                  analysisPrompt = await input({
+                    message: 'Enter a valid path or press Enter to skip',
+                    default: '',
+                  });
+                  if (analysisPrompt) {
+                    const secondValidation = validateAnalysisPromptFile(analysisPrompt);
+                    if (!secondValidation) {
+                      console.log(chalk.yellow('Skipping custom prompt file'));
+                      analysisPrompt = '';
+                    }
+                  }
+                }
+              }
+
+              return {
+                jiraUrl: jiraUrl.endsWith('/') ? jiraUrl.slice(0, -1) : jiraUrl,
+                email,
+                apiToken,
+                ...(analysisCommand && { analysisCommand }),
+                ...(analysisPrompt && { analysisPrompt }),
+              };
+            },
+            catch: (error) => {
+              if (error instanceof Error && error.message.includes('User force closed')) {
+                console.log(`\n${chalk.yellow('Setup cancelled')}`);
+                process.exit(0);
+              }
+              return new Error(`Failed to get user input: ${error}`);
+            },
+          }),
         ),
       ),
     ),
-    Effect.tap(() => Console.log('Verifying credentials...')),
+    Effect.tap(() => Console.log('\nVerifying credentials...')),
     Effect.flatMap((config) =>
       pipe(
         verifyCredentials(config),
@@ -318,13 +218,12 @@ const setupEffect = (rl: readline.Interface) =>
   );
 
 export async function setup() {
-  const rl = readline.createInterface({ input, output });
-
-  const program = setupEffect(rl);
+  const program = setupEffect();
 
   try {
     await Effect.runPromise(program);
-  } finally {
-    rl.close();
+  } catch (_error) {
+    // Error already handled and displayed
+    process.exit(1);
   }
 }

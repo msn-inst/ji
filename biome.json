@@ -13,6 +13,9 @@
     "lineEnding": "lf",
     "lineWidth": 120
   },
+  "assist": {
+    "enabled": false
+  },
   "linter": {
     "enabled": true,
     "rules": {
@@ -25,6 +28,9 @@
       },
       "complexity": {
         "noStaticOnlyClass": "off"
+      },
+      "correctness": {
+        "noUnusedImports": "off"
       }
     }
   },

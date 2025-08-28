@@ -25,7 +25,7 @@ export class ConfigServiceTag extends Context.Tag('ConfigService')<ConfigService
 export const ConfigServiceLive = Layer.effect(
   ConfigServiceTag,
   Effect.gen(function* () {
-    const configPath = join(homedir(), '.ji', 'auth.json');
+    const configPath = join(homedir(), '.ji', 'config.json');
     const configRef = yield* Ref.make<JiConfig | null>(null);
 
     const loadConfig = Effect.try({

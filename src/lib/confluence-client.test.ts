@@ -8,7 +8,7 @@ describe('ConfluenceClient', () => {
   beforeEach(() => {
     // Allow API calls in test environment
     process.env.ALLOW_REAL_API_CALLS = 'true';
-    
+
     // Mock global fetch
     (global as any).fetch = async (url: string | URL, options?: any): Promise<Response> => {
       const urlString = url.toString();
@@ -66,6 +66,7 @@ describe('ConfluenceClient', () => {
           JSON.stringify({
             id: pageId,
             type: 'page',
+            status: 'current',
             title: 'Test Page Detail',
             space: { key: 'TEST', name: 'Test Space' },
             body: {
@@ -84,26 +85,49 @@ describe('ConfluenceClient', () => {
       }
 
       if (urlString.includes('/wiki/rest/api/space')) {
-        return new Response(
-          JSON.stringify({
-            results: [
-              {
-                key: 'TEST',
-                name: 'Test Space',
-                type: 'global',
-                id: 1234,
-              },
-              {
-                key: 'DEV',
-                name: 'Development Space',
-                type: 'global',
-                id: 5678,
-              },
-            ],
-            size: 2,
-          }),
-          { status: 200 },
-        );
+        // Check if it's a request for a specific space
+        const spaceKeyMatch = urlString.match(/\/space\/([A-Z]+)$/);
+        if (spaceKeyMatch) {
+          // Return single space
+          const spaceKey = spaceKeyMatch[1];
+          return new Response(
+            JSON.stringify({
+              key: spaceKey,
+              name: `${spaceKey} Space`,
+              type: 'global',
+              status: 'current',
+              _links: {},
+              id: spaceKey === 'TEST' ? 1234 : 5678,
+            }),
+            { status: 200 },
+          );
+        } else {
+          // Return list of spaces
+          return new Response(
+            JSON.stringify({
+              results: [
+                {
+                  key: 'TEST',
+                  name: 'Test Space',
+                  type: 'global',
+                  status: 'current',
+                  _links: {},
+                  id: 1234,
+                },
+                {
+                  key: 'DEV',
+                  name: 'Development Space',
+                  type: 'global',
+                  status: 'current',
+                  _links: {},
+                  id: 5678,
+                },
+              ],
+              size: 2,
+            }),
+            { status: 200 },
+          );
+        }
       }
 
       return new Response(null, { status: 404 });
@@ -133,7 +157,6 @@ describe('ConfluenceClient', () => {
       expect(fetchCalls[0].url).toContain('/wiki/rest/api/content/123456');
       expect(fetchCalls[0].url).toContain('expand=body.storage');
     });
-
   });
 
   describe('Space Operations', () => {
@@ -153,7 +176,7 @@ describe('ConfluenceClient', () => {
       const authHeader = fetchCalls[0].options.headers.Authorization;
       expect(authHeader).toBeDefined();
       expect(authHeader).toContain('Basic');
-      
+
       // Verify base64 encoding of email:token
       const expectedAuth = Buffer.from('test@example.com:test-token-123').toString('base64');
       expect(authHeader).toBe(`Basic ${expectedAuth}`);
@@ -218,9 +241,10 @@ describe('ConfluenceClient', () => {
         email: 'test@example.com',
         apiToken: 'test-token',
       });
-      
+
       // @ts-ignore - accessing private property for testing
-      expect(clientWithSlash.baseUrl).toBe('https://test.atlassian.net');
+      // baseUrl should have the API path appended but no trailing slash from the jiraUrl
+      expect(clientWithSlash.baseUrl).toBe('https://test.atlassian.net/wiki/rest/api');
     });
   });
 });

@@ -54,7 +54,7 @@ The `ji auth` command provides an interactive setup process for configuring Jira
 
 ### Credential Storage
 
-10. The system shall store credentials in `~/.ji/auth.json` with 600 file permissions.
+10. The system shall store credentials in `~/.ji/config.json` with 600 file permissions.
 
 11. The credential file shall contain:
     ```json
@@ -72,9 +72,9 @@ The `ji auth` command provides an interactive setup process for configuring Jira
 
 ### Security Measures
 
-14. The system shall validate that the auth.json file has correct permissions (600).
+14. The system shall validate that the config.json file has correct permissions (600).
 
-15. If auth.json exists with incorrect permissions, the system shall:
+15. If config.json exists with incorrect permissions, the system shall:
     - Display a security warning
     - Offer to fix the permissions automatically
     - Block execution until permissions are corrected
@@ -129,7 +129,7 @@ Testing connection...
 ✓ Successfully authenticated as John Doe (john.doe@company.com)
 ✓ Connection to https://mycompany.atlassian.net verified
 
-Configuration saved to ~/.ji/auth.json
+Configuration saved to ~/.ji/config.json
 ```
 
 ### Reconfiguration

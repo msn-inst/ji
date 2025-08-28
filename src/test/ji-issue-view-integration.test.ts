@@ -148,7 +148,7 @@ test('ji EVAL-5767 command - real issue viewing with comments array processing',
 
     // Verify comments are formatted as XML
     expect(output).toContain('<comments>');
-    
+
     // Verify proper XML structure
     expect(output).toContain('<author>Test User Three</author>');
     expect(output).toContain('<author>Test User Two</author>');
