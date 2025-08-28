@@ -43,13 +43,18 @@ export async function showSprint(projectFilter?: string, options: { unassigned?:
     const boards = await jiraClient.getBoards();
     const activeSprintIssues: SprintIssue[] = [];
 
+    // Use default project if no filter specified
+    const effectiveProject = projectFilter || config.defaultProject;
+
     // Filter boards by project if specified
-    const filteredBoards = projectFilter
-      ? boards.filter((board) => board.location?.projectKey?.toUpperCase() === projectFilter.toUpperCase())
+    const filteredBoards = effectiveProject
+      ? boards.filter((board) => board.location?.projectKey?.toUpperCase() === effectiveProject.toUpperCase())
       : boards;
 
     if (filteredBoards.length === 0) {
-      const message = projectFilter ? `No boards found for project ${projectFilter.toUpperCase()}` : 'No boards found';
+      const message = effectiveProject
+        ? `No boards found for project ${effectiveProject.toUpperCase()}`
+        : 'No boards found';
       console.log(message);
       return;
     }

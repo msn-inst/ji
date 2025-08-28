@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "Testing default project feature in ji setup"
+echo "============================================"
+echo ""
+echo "1. Run 'ji setup' and enter your project key when prompted"
+echo "   Example: PROJ, MYAPP, etc."
+echo ""
+echo "2. Once setup is complete, you can use:"
+echo "   - 'ji sprint' - will use your default project"
+echo "   - 'ji board' - will use your default project"
+echo "   - 'ji sprint OTHER' - override with a different project"
+echo "   - 'ji board OTHER' - override with a different project"
+echo ""
+echo "The default project is saved in ~/.ji/config.json"
+echo ""

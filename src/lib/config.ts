@@ -26,6 +26,7 @@ const ConfigSchema = Schema.Struct({
   apiToken: Schema.String.pipe(Schema.minLength(1)),
   analysisPrompt: Schema.optional(Schema.String), // Path to analysis prompt file
   analysisCommand: Schema.optional(Schema.String), // Command for analysis tool (e.g., "claude -p")
+  defaultProject: Schema.optional(Schema.String), // Default project key (e.g., "PROJ")
 });
 
 export type Config = Schema.Schema.Type<typeof ConfigSchema>;
