@@ -1,14 +1,19 @@
 import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { ConfigManager } from './config.js';
+import { EnvironmentSaver } from '../test/test-helpers.js';
 
 describe('ConfigManager Extended Tests', () => {
   let tempDir: string;
   let configManager: ConfigManager;
+  const envSaver = new EnvironmentSaver();
 
   beforeEach(() => {
+    // Save original environment
+    envSaver.save('JI_CONFIG_DIR');
+
     // Create a temporary directory for test database
     tempDir = mkdtempSync(join(tmpdir(), 'ji-test-'));
     process.env.JI_CONFIG_DIR = tempDir;
@@ -20,8 +25,16 @@ describe('ConfigManager Extended Tests', () => {
     if (configManager?.close) {
       configManager.close();
     }
-    rmSync(tempDir, { recursive: true, force: true });
-    delete process.env.JI_CONFIG_DIR;
+
+    // Restore environment
+    envSaver.restore();
+
+    // Remove temp directory
+    try {
+      rmSync(tempDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
   });
 
   describe('Authentication Management', () => {
@@ -46,7 +59,7 @@ describe('ConfigManager Extended Tests', () => {
       };
 
       await configManager.setConfig(initialAuth);
-      
+
       const updatedAuth = {
         jiraUrl: 'https://new.atlassian.net',
         email: 'new@example.com',
@@ -82,17 +95,8 @@ describe('ConfigManager Extended Tests', () => {
       expect(retrieved).toEqual(authData);
       newConfigManager.close();
     });
-  });
 
-  describe('Database Operations', () => {
-    it('should initialize database with correct schema', () => {
-      // Verify database is created
-      const dbPath = join(tempDir, 'ji.db');
-      const fs = require('fs');
-      expect(fs.existsSync(dbPath)).toBe(true);
-    });
-
-    it('should handle database close operation', () => {
+    it('should handle close operation', () => {
       expect(() => {
         configManager.close();
       }).not.toThrow();
@@ -106,12 +110,12 @@ describe('ConfigManager Extended Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle invalid JSON in auth config', async () => {
-      const authPath = join(tempDir, 'auth.json');
-      writeFileSync(authPath, 'invalid json{', 'utf-8');
+      const configPath = join(tempDir, 'config.json');
+      writeFileSync(configPath, 'invalid json{', 'utf-8');
 
       const manager = new ConfigManager();
-      const config = manager.getConfig();
-      
+      const config = await manager.getConfig();
+
       // Should return null for invalid config
       expect(config).toBeNull();
       manager.close();
@@ -119,25 +123,40 @@ describe('ConfigManager Extended Tests', () => {
 
     it('should create config directory if it does not exist', async () => {
       const nonExistentDir = join(tempDir, 'non-existent', 'nested', 'dir');
-      process.env.JI_CONFIG_DIR = nonExistentDir;
+      const localEnvSaver = new EnvironmentSaver();
+      localEnvSaver.save('JI_CONFIG_DIR');
 
-      const manager = new ConfigManager();
-      manager.setConfig({
-        jiraUrl: 'https://test.atlassian.net',
-        email: 'test@example.com',
-        apiToken: 'test-token',
-      });
+      try {
+        process.env.JI_CONFIG_DIR = nonExistentDir;
 
-      const config = await manager.getConfig();
-      expect(config).not.toBeNull();
-      expect(config?.jiraUrl).toBe('https://test.atlassian.net');
-      
-      manager.close();
+        const manager = new ConfigManager();
+        await manager.setConfig({
+          jiraUrl: 'https://test.atlassian.net',
+          email: 'test@example.com',
+          apiToken: 'test-token',
+        });
+
+        const config = await manager.getConfig();
+        expect(config).not.toBeNull();
+        expect(config?.jiraUrl).toBe('https://test.atlassian.net');
+
+        manager.close();
+      } finally {
+        // Restore environment
+        localEnvSaver.restore();
+
+        // Clean up the created directory
+        try {
+          rmSync(nonExistentDir, { recursive: true, force: true });
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
     });
   });
 
   describe('Security', () => {
-    it('should create auth.json with restricted permissions', async () => {
+    it('should create config.json with restricted permissions', async () => {
       const authData = {
         jiraUrl: 'https://secure.atlassian.net',
         email: 'secure@example.com',
@@ -146,16 +165,16 @@ describe('ConfigManager Extended Tests', () => {
 
       await configManager.setConfig(authData);
 
-      const authPath = join(tempDir, 'auth.json');
-      const fs = require('fs');
-      const stats = fs.statSync(authPath);
-      
+      const configPath = join(tempDir, 'config.json');
+      const fs = require('node:fs');
+      const stats = fs.statSync(configPath);
+
       // Check that file permissions are restrictive (owner read/write only)
       // On Unix-like systems, this would be 0600
-      const mode = stats.mode & parseInt('777', 8);
-      
+      const mode = stats.mode & 0o777;
+
       // The file should not be world-readable
-      expect(mode & parseInt('004', 8)).toBe(0);
+      expect(mode & 0o004).toBe(0);
     });
   });
 });

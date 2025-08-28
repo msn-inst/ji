@@ -18,7 +18,7 @@ export interface AppConfig {
   jira: {
     baseUrl: string;
     email: string;
-    // API token stored separately in auth.json for security
+    // API token stored separately in config.json for security
     maxResults: number;
     timeout: number;
     retries: number;

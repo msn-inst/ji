@@ -335,7 +335,7 @@ ${chalk.yellow('Description:')}
   Interactive setup wizard that configures:
   - Jira authentication (URL, email, API token)
   - AI analysis tool preferences (optional)
-  Stores configuration securely in ~/.ji/auth.json
+  Stores configuration securely in ~/.ji/config.json
 
 ${chalk.yellow('Required Information:')}
   - Jira URL (e.g., https://company.atlassian.net)

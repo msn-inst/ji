@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { IssueSchema } from '../lib/effects/jira/schemas';
 import { createValidIssue, validateAndReturn } from './msw-schema-validation';
 import { installFetchMock, restoreFetch } from './test-fetch-mock';
@@ -6,17 +9,33 @@ import { installFetchMock, restoreFetch } from './test-fetch-mock';
 // Test to verify that `ji EVAL-5767` and `ji issue view EVAL-5767`
 // produce identical output (they should be exact aliases)
 
+let tempDir: string;
+
 beforeEach(() => {
-  // Clean state for each test
+  // Create temp directory for test config
+  tempDir = mkdtempSync(join(tmpdir(), 'ji-alias-test-'));
+  process.env.JI_CONFIG_DIR = tempDir;
+
+  // Create mock config file
+  const mockConfig = {
+    jiraUrl: 'https://test.atlassian.net',
+    email: 'test@example.com',
+    apiToken: 'test-token-123',
+  };
+  writeFileSync(join(tempDir, 'config.json'), JSON.stringify(mockConfig), { mode: 0o600 });
 });
 
 afterEach(() => {
   restoreFetch();
   delete process.env.ALLOW_REAL_API_CALLS;
+  delete process.env.JI_CONFIG_DIR;
+
+  // Clean up temp directory
+  if (tempDir) {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
 });
 
-// NOTE: This test is skipped in CI because it requires file system access
-// and SQLite database operations that are not available in the CI environment
 test('ji EVAL-5767 and ji issue view EVAL-5767 are identical aliases', async () => {
   // Create test issue
   const testIssue = createValidIssue({
@@ -85,12 +104,6 @@ test('ji EVAL-5767 and ji issue view EVAL-5767 are identical aliases', async () 
   });
 
   process.env.ALLOW_REAL_API_CALLS = 'true';
-
-  // Initialize database first to avoid migration messages during output capture
-  // CacheManager has been refactored, skip this initialization
-  // const { CacheManager } = await import('../lib/cache');
-  // const cacheManager = new CacheManager();
-  // cacheManager.close(); // Just initialize the DB, then close
 
   // Capture output from direct issue key command
   const directOutput: string[] = [];

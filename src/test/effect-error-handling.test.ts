@@ -44,30 +44,6 @@ describe('Effect Error Handling', () => {
       expect(error.status).toBe(404);
       expect(error.url).toBe('https://api.example.com/data');
     });
-
-    it('should create database errors with query context', () => {
-      class DatabaseError extends Error {
-        readonly _tag = 'DatabaseError';
-
-        constructor(
-          message: string,
-          public readonly query?: string,
-          public readonly params?: unknown[],
-        ) {
-          super(message);
-        }
-      }
-
-      const error = new DatabaseError(
-        'Foreign key constraint failed',
-        'INSERT INTO issues (key, project_key) VALUES (?, ?)',
-        ['TEST-1', 'NONEXISTENT'],
-      );
-
-      expect(error._tag).toBe('DatabaseError');
-      expect(error.query).toContain('INSERT INTO issues');
-      expect(error.params).toEqual(['TEST-1', 'NONEXISTENT']);
-    });
   });
 
   describe('Error handling patterns', () => {
@@ -150,7 +126,6 @@ describe('Effect Error Handling', () => {
           return { success: false, error: ['Data must be an object'] };
         }
 
-        // biome-ignore lint/suspicious/noExplicitAny: Mock data for testing
         const obj = data as any;
 
         if (typeof obj.key !== 'string' || !obj.key.match(/^[A-Z]+-\d+$/)) {
@@ -224,7 +199,6 @@ describe('Effect Error Handling', () => {
           return { success: false, error: ['Config must be an object'] };
         }
 
-        // biome-ignore lint/suspicious/noExplicitAny: Mock data for testing
         const obj = data as any;
 
         if (typeof obj.jiraUrl !== 'string' || !obj.jiraUrl.startsWith('https://')) {

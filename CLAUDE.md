@@ -21,7 +21,7 @@ Inspired by [jira-cli](https://github.com/ankitpokhrel/jira-cli).
 
 1. **API-only architecture**: Direct API calls for always-fresh data without local storage complexity
 2. **Bun-first**: This project uses Bun as the primary runtime and build tool
-3. **Secure auth storage**: Credentials in `~/.ji/auth.json` (600 permissions)
+3. **Secure auth storage**: Credentials in `~/.ji/config.json` (600 permissions)
 4. **Smart filtering**: JQL-powered queries for efficient status, time, and assignee filtering
 5. **Security**: API keys stored securely, never in git or environment variables
 6. **Cross-platform search**: API-based search across Jira and Confluence content
@@ -243,7 +243,7 @@ src/
 ## Important Security Notes
 
 - NEVER commit API keys or tokens
-- Authentication stored separately in `~/.ji/auth.json` (600 permissions)
+- Authentication stored separately in `~/.ji/config.json` (600 permissions)
 - Test configuration stored in `~/.ji/test-config.json` (gitignored, contains environment-specific data)
 - `.gitignore` configured to exclude all sensitive files including test configs
 - All sensitive configuration files use 600 permissions for security

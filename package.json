@@ -1,6 +1,6 @@
 {
   "name": "@aaronshaf/ji",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Jira CLI with LLM-friendly output",
   "type": "module",
   "bin": {
@@ -47,13 +47,13 @@
     "jira",
     "confluence",
     "cli",
-    "sqlite",
     "daemon"
   ],
   "author": "Aaron Shafovaloff <aaronshaf@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "@effect/schema": "^0.75.5",
+    "@inquirer/prompts": "^7.8.4",
     "date-fns": "^4.1.0",
     "effect": "^3.16.10",
     "ink": "^6.0.1",

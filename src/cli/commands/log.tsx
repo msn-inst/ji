@@ -249,7 +249,7 @@ const getConfigEffect = () =>
       try {
         const config = await configManager.getConfig();
         if (!config) {
-          throw new Error('No configuration found. Please run "ji auth" first.');
+          throw new Error('No configuration found. Please run "ji setup" first.');
         }
         return { config, configManager };
       } catch (error) {
@@ -270,7 +270,7 @@ const getCommentsEffect = (jiraClient: JiraClient, issueKey: string) =>
           return new Error(`Issue ${issueKey} not found`);
         }
         if (error.message.includes('401')) {
-          return new Error('Authentication failed. Please run "ji auth" again.');
+          return new Error('Authentication failed. Please run "ji setup" again.');
         }
         return error;
       }

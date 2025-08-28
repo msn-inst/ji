@@ -237,7 +237,7 @@ const setupTestsEffect = (): Effect.Effect<
               Effect.flatMap((config) => {
                 if (!config) {
                   return pipe(
-                    Console.error(chalk.red('No configuration found. Please run "ji auth" first.')),
+                    Console.error(chalk.red('No configuration found. Please run "ji setup" first.')),
                     Effect.flatMap(() => Effect.succeed(process.exit(1))),
                   );
                 }

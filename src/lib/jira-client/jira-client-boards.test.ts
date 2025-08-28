@@ -1,7 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
 import { JiraClient } from '../jira-client.js';
 
-
 describe('JiraClient - Boards and Sprints', () => {
   let client: JiraClient;
   let fetchCalls: Array<{ url: string; options: any }> = [];
@@ -9,7 +8,7 @@ describe('JiraClient - Boards and Sprints', () => {
   beforeEach(() => {
     // Allow API calls in test environment
     process.env.ALLOW_REAL_API_CALLS = 'true';
-    
+
     // Mock global fetch
     (global as any).fetch = async (url: string | URL, options?: any): Promise<Response> => {
       const urlString = url.toString();
@@ -17,8 +16,8 @@ describe('JiraClient - Boards and Sprints', () => {
 
       // Mock responses for board endpoints
       if (urlString.includes('/rest/agile/1.0/board')) {
-        if (urlString.endsWith('/board')) {
-          // Get all boards
+        if (urlString.includes('/board') && !urlString.match(/\/board\/\d+/)) {
+          // Get all boards (handles both /board and /board?type=scrum)
           return new Response(
             JSON.stringify({
               maxResults: 50,
@@ -141,7 +140,7 @@ describe('JiraClient - Boards and Sprints', () => {
 
       if (urlString.includes('/rest/agile/1.0/sprint/')) {
         const sprintId = urlString.match(/\/sprint\/(\d+)/)?.[1];
-        
+
         if (urlString.endsWith(`/sprint/${sprintId}`)) {
           // Get specific sprint
           return new Response(
@@ -170,6 +169,7 @@ describe('JiraClient - Boards and Sprints', () => {
                 {
                   id: '10003',
                   key: 'TEST-3',
+                  self: 'https://test.atlassian.net/rest/api/2/issue/10003',
                   fields: {
                     summary: 'Sprint Issue',
                     status: { name: 'Done' },
@@ -281,11 +281,8 @@ describe('JiraClient - Boards and Sprints', () => {
 
   describe('Error Handling', () => {
     it('should handle board not found', async () => {
-      (global as any).fetch = async () => 
-        new Response(
-          JSON.stringify({ errorMessages: ['Board not found'] }),
-          { status: 404 },
-        );
+      (global as any).fetch = async () =>
+        new Response(JSON.stringify({ errorMessages: ['Board not found'] }), { status: 404 });
 
       try {
         await client.getBoards();
@@ -296,11 +293,8 @@ describe('JiraClient - Boards and Sprints', () => {
     });
 
     it('should handle sprint not found', async () => {
-      (global as any).fetch = async () => 
-        new Response(
-          JSON.stringify({ errorMessages: ['Sprint does not exist'] }),
-          { status: 404 },
-        );
+      (global as any).fetch = async () =>
+        new Response(JSON.stringify({ errorMessages: ['Sprint does not exist'] }), { status: 404 });
 
       try {
         await client.getSprintIssues(999);
@@ -311,11 +305,7 @@ describe('JiraClient - Boards and Sprints', () => {
     });
 
     it('should handle unauthorized access', async () => {
-      (global as any).fetch = async () => 
-        new Response(
-          JSON.stringify({ message: 'Unauthorized' }),
-          { status: 401 },
-        );
+      (global as any).fetch = async () => new Response(JSON.stringify({ message: 'Unauthorized' }), { status: 401 });
 
       try {
         await client.getBoards();

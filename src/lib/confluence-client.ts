@@ -121,7 +121,9 @@ export class ConfluenceClient {
     }
     this.config = config;
     // Confluence uses the same base URL as Jira
-    this.baseUrl = `${config.jiraUrl}/wiki/rest/api`;
+    // Remove trailing slash from jiraUrl if present
+    const baseJiraUrl = config.jiraUrl.replace(/\/$/, '');
+    this.baseUrl = `${baseJiraUrl}/wiki/rest/api`;
   }
 
   private getHeaders() {

@@ -21,7 +21,7 @@ const getConfigEffect = () =>
       try {
         const config = await configManager.getConfig();
         if (!config) {
-          throw new Error('No configuration found. Please run "ji auth" first.');
+          throw new Error('No configuration found. Please run "ji setup" first.');
         }
         const jiraClient = new JiraClient(config);
         return { config, configManager, jiraClient };

@@ -124,7 +124,7 @@ export async function showMyIssues(projectFilter?: string, xml = false, statusFi
   try {
     const config = await configManager.getConfig();
     if (!config) {
-      console.error('No configuration found. Please run "ji auth" first.');
+      console.error('No configuration found. Please run "ji setup" first.');
       process.exit(1);
     }
 

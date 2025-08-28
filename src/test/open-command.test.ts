@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, rmSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openCommand, setExecForTesting } from '../cli/commands/open';
 
@@ -13,13 +13,12 @@ const mockExec = ((command: string, callback: (error: Error | null, stdout: stri
   execCalls.push(command);
   // Simulate successful execution
   callback(null, '', '');
-  // biome-ignore lint/suspicious/noExplicitAny: Mock function for testing
 }) as any;
 
 // Test directory setup
 const TEST_DIR = join(homedir(), '.ji-test-open');
 const _TEST_DB_PATH = join(TEST_DIR, 'data.db');
-const TEST_AUTH_PATH = join(TEST_DIR, 'auth.json');
+const TEST_CONFIG_PATH = join(TEST_DIR, 'config.json');
 
 beforeEach(() => {
   // Set the mock exec for testing
@@ -37,7 +36,7 @@ beforeEach(() => {
     apiToken: 'test-token',
     userId: 'test-user-id',
   };
-  Bun.write(TEST_AUTH_PATH, JSON.stringify(testAuth, null, 2));
+  Bun.write(TEST_CONFIG_PATH, JSON.stringify(testAuth, null, 2));
 
   // We don't actually need a database for the open command since we removed cache checking
 
@@ -167,8 +166,16 @@ test('ji open - validates issue key format', async () => {
 });
 
 test('ji open - handles missing configuration', async () => {
-  // Remove auth file to simulate missing config
-  rmSync(TEST_AUTH_PATH, { force: true });
+  // Save and clear the environment to ensure isolation
+  const originalConfigDir = process.env.JI_CONFIG_DIR;
+
+  // Create a new temp directory for this test specifically
+  const isolatedDir = mkdtempSync(join(tmpdir(), 'ji-test-missing-config-'));
+  process.env.JI_CONFIG_DIR = isolatedDir;
+
+  // Ensure no auth file exists in the isolated directory
+  const isolatedConfigPath = join(isolatedDir, 'config.json');
+  rmSync(isolatedConfigPath, { force: true });
 
   // Capture console output
   const logs: string[] = [];
@@ -210,6 +217,16 @@ test('ji open - handles missing configuration', async () => {
   } finally {
     console.log = originalLog;
     console.error = originalError;
+
+    // Restore environment
+    if (originalConfigDir === undefined) {
+      delete process.env.JI_CONFIG_DIR;
+    } else {
+      process.env.JI_CONFIG_DIR = originalConfigDir;
+    }
+
+    // Clean up isolated directory
+    rmSync(isolatedDir, { recursive: true, force: true });
   }
 });
 
@@ -252,7 +269,7 @@ test('ji open - handles trailing slash in jiraUrl', async () => {
     apiToken: 'test-token',
     userId: 'test-user-id',
   };
-  Bun.write(TEST_AUTH_PATH, JSON.stringify(testAuth, null, 2));
+  Bun.write(TEST_CONFIG_PATH, JSON.stringify(testAuth, null, 2));
 
   // Capture console output
   const logs: string[] = [];

@@ -17,7 +17,7 @@ export async function search(
     const config = await configManager.getConfig();
 
     if (!config) {
-      console.error('No configuration found. Please run "ji auth" first.');
+      console.error('No configuration found. Please run "ji setup" first.');
       process.exit(1);
     }
 
@@ -78,7 +78,7 @@ export async function askQuestion(question: string) {
     const config = await configManager.getConfig();
 
     if (!config) {
-      console.error('No configuration found. Please run "ji auth" first.');
+      console.error('No configuration found. Please run "ji setup" first.');
       process.exit(1);
     }
 

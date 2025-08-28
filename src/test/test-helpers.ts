@@ -54,3 +54,62 @@ export async function runCLICommand(commandFn: () => Promise<void>) {
     capture.restore();
   }
 }
+
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+/**
+ * Helper to isolate test environment for ConfigManager tests
+ * Creates a temporary directory and sets JI_CONFIG_DIR to it
+ * Returns a cleanup function that must be called in afterEach or finally
+ */
+export function isolateTestEnvironment(): {
+  tempDir: string;
+  cleanup: () => void;
+} {
+  const originalConfigDir = process.env.JI_CONFIG_DIR;
+  const tempDir = mkdtempSync(join(tmpdir(), 'ji-test-'));
+
+  process.env.JI_CONFIG_DIR = tempDir;
+
+  const cleanup = () => {
+    // Restore original environment
+    if (originalConfigDir === undefined) {
+      delete process.env.JI_CONFIG_DIR;
+    } else {
+      process.env.JI_CONFIG_DIR = originalConfigDir;
+    }
+
+    // Clean up temp directory
+    try {
+      rmSync(tempDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  };
+
+  return { tempDir, cleanup };
+}
+
+/**
+ * Helper to save and restore environment variables
+ */
+export class EnvironmentSaver {
+  private saved: Map<string, string | undefined> = new Map();
+
+  save(key: string): void {
+    this.saved.set(key, process.env[key]);
+  }
+
+  restore(): void {
+    for (const [key, value] of this.saved) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+    this.saved.clear();
+  }
+}
