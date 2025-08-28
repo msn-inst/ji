@@ -14,13 +14,12 @@ import { askQuestion, search } from './commands/search.js';
 import { setup } from './commands/setup.js';
 // import { initializeSetup } from './commands/setup.js'; // Disabled due to TypeScript errors
 import { showSprint } from './commands/sprint.js';
-
-import { testCommand } from './commands/test.js';
+import { statusCommand } from './commands/status.js';
 
 // Command-specific help functions
 function showSearchHelp() {
   console.log(`
-${chalk.bold('ji search - Search across Jira and Confluence')}
+${chalk.bold('ji search - Search across Jira')}
 
 ${chalk.yellow('Usage:')}
   ji search <query> [options]
@@ -28,14 +27,12 @@ ${chalk.yellow('Usage:')}
 ${chalk.yellow('Options:')}
   --limit=N, --limit N      Limit number of results (default: 10)
   --jira                    Search only Jira content
-  --confluence              Search only Confluence content
   --all                     Include all results
   --help                    Show this help message
 
 ${chalk.yellow('Examples:')}
   ji search "login bug"
   ji search "deployment" --limit=5
-  ji search "API documentation" --confluence
   ji search "EVAL-123"
 `);
 }
@@ -61,30 +58,6 @@ ${chalk.yellow('Note:')}
 ${chalk.yellow('Examples:')}
   ji issue view EVAL-123    # View issue details
   ji sprint ABC             # Show current sprint for project ABC
-`);
-}
-
-function showConfluenceHelp() {
-  console.log(`
-${chalk.bold('ji confluence - Confluence commands')}
-
-${chalk.yellow('Usage:')}
-  ji confluence <subcommand> [options]
-
-${chalk.yellow('Subcommands:')}
-  sync <space-key>          Sync Confluence space
-  recent <space-key> [N]    Show N recent pages (default: 10)
-  view <page-id>            View a Confluence page
-
-${chalk.yellow('Options:')}
-  --clean                   Clean sync - remove existing pages first
-  --help                    Show this help message
-
-${chalk.yellow('Examples:')}
-  ji confluence sync ENG
-  ji confluence sync ENG --clean
-  ji confluence recent ENG 20
-  ji confluence view 12345
 `);
 }
 
@@ -311,7 +284,7 @@ ${chalk.yellow('Usage:')}
   ji ask "<question>"
 
 ${chalk.yellow('Description:')}
-  Uses AI to answer questions based on your synced Jira and Confluence content.
+  Uses AI to answer questions based on your synced Jira content.
   Requires Ollama to be installed and running.
 
 ${chalk.yellow('Options:')}
@@ -377,27 +350,6 @@ ${chalk.yellow('Examples:')}
 `);
 }
 
-function showTestHelp() {
-  console.log(`
-${chalk.bold('ji test - Testing framework')}
-
-${chalk.yellow('Usage:')}
-  ji test [options]
-
-${chalk.yellow('Options:')}
-  --setup                   Configure environment-specific tests
-  --help                    Show this help message
-
-${chalk.yellow('Description:')}
-  Comprehensive testing framework that validates all CLI commands.
-  Use --setup to configure tests with real data from your environment.
-
-${chalk.yellow('Examples:')}
-  ji test --setup           Configure tests
-  ji test                   Run all tests
-`);
-}
-
 function showAnalyzeHelp() {
   console.log(`
 ${chalk.bold('ji analyze - Analyze Jira issue with AI')}
@@ -445,12 +397,32 @@ ${chalk.yellow('Examples:')}
 }
 
 // Helper function to show usage
+function showStatusHelp() {
+  console.log(`
+${chalk.bold('ji status - Check Jira connection')}
+
+${chalk.yellow('Usage:')}
+  ji status
+
+${chalk.yellow('Description:')}
+  Verifies your Jira connection and displays current configuration.
+  Shows the authenticated user and basic statistics.
+
+${chalk.yellow('Options:')}
+  --help                    Show this help message
+
+${chalk.yellow('Examples:')}
+  ji status                 Check connection and show user info
+`);
+}
+
 function showHelp() {
   console.log(`
-${chalk.bold('ji - Jira & Confluence CLI')}
+${chalk.bold('ji - Jira CLI')}
 
 ${chalk.yellow('Setup:')}
   ji setup                             Configure Jira authentication and AI tools
+  ji status                            Check Jira connection and configuration
 
 ${chalk.yellow('Issues:')}
   ji mine [options]                    Show your issues with flexible filters
@@ -472,10 +444,6 @@ ${chalk.yellow('Boards & Sprints:')}
 ${chalk.yellow('Configuration:')}
   ji config                            Discover available custom fields  
   ji models                            Configure AI models
-
-${chalk.yellow('Testing:')}
-  ji test                              Run all configured tests
-  ji test --setup                      Configure environment-specific tests
 
 ${chalk.yellow('Help:')}
   ji help                              Show this help message
@@ -703,15 +671,6 @@ async function main() {
         break;
       }
 
-      case 'confluence':
-        if (args.includes('--help') || !subArgs[0]) {
-          showConfluenceHelp();
-          process.exit(0);
-        }
-
-        console.error('Confluence commands are no longer supported.');
-        break;
-
       case 'sync':
         console.error('Sync command is no longer supported.');
         return;
@@ -764,7 +723,7 @@ async function main() {
 
         const query = queryArgs.join(' ');
         await search(query, {
-          source: args.includes('--jira') ? 'jira' : args.includes('--confluence') ? 'confluence' : undefined,
+          source: 'jira',
           limit,
           includeAll: args.includes('--all'),
         });
@@ -802,12 +761,12 @@ async function main() {
         await configureModels();
         break;
 
-      case 'test':
+      case 'status':
         if (args.includes('--help')) {
-          showTestHelp();
+          showStatusHelp();
           process.exit(0);
         }
-        await testCommand({ setup: args.includes('--setup') });
+        await statusCommand();
         break;
 
       default:
