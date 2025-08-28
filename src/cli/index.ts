@@ -8,34 +8,13 @@ import { markIssueDone } from './commands/done.js';
 import { viewIssue } from './commands/issue.js';
 import { showIssueLog } from './commands/log.js';
 import { showMyIssues, takeIssue } from './commands/mine.js';
-import { configureModels } from './commands/models.js';
 import { openCommand } from './commands/open.js';
-import { askQuestion, search } from './commands/search.js';
 import { setup } from './commands/setup.js';
 // import { initializeSetup } from './commands/setup.js'; // Disabled due to TypeScript errors
 import { showSprint } from './commands/sprint.js';
 import { statusCommand } from './commands/status.js';
 
 // Command-specific help functions
-function showSearchHelp() {
-  console.log(`
-${chalk.bold('ji search - Search across Jira')}
-
-${chalk.yellow('Usage:')}
-  ji search <query> [options]
-
-${chalk.yellow('Options:')}
-  --limit=N, --limit N      Limit number of results (default: 10)
-  --jira                    Search only Jira content
-  --all                     Include all results
-  --help                    Show this help message
-
-${chalk.yellow('Examples:')}
-  ji search "login bug"
-  ji search "deployment" --limit=5
-  ji search "EVAL-123"
-`);
-}
 
 function showIssueHelp() {
   console.log(`
@@ -278,27 +257,6 @@ ${chalk.yellow('Examples:')}
 `);
 }
 
-function showAskHelp() {
-  console.log(`
-${chalk.bold('ji ask - Ask questions about your content')}
-
-${chalk.yellow('Usage:')}
-  ji ask "<question>"
-
-${chalk.yellow('Description:')}
-  Uses AI to answer questions based on your synced Jira content.
-  Requires Ollama to be installed and running.
-
-${chalk.yellow('Options:')}
-  --help                    Show this help message
-
-${chalk.yellow('Examples:')}
-  ji ask "What are the deployment steps?"
-  ji ask "How do I configure authentication?"
-  ji ask "What issues are blocking the release?"
-`);
-}
-
 function showSetupHelp() {
   console.log(`
 ${chalk.bold('ji setup - Configure Jira CLI')}
@@ -322,33 +280,6 @@ ${chalk.yellow('Options:')}
 
 ${chalk.yellow('Examples:')}
   ji setup                  # Start interactive setup
-`);
-}
-
-function showModelsHelp() {
-  console.log(`
-${chalk.bold('ji models - Configure AI models')}
-
-${chalk.yellow('Usage:')}
-  ji models
-
-${chalk.yellow('Description:')}
-  View and configure AI model settings:
-  - Ask Model: Model used for 'ji ask' questions
-  - Embedding Model: Model for semantic search
-  - Analysis Model: Model for query analysis
-  
-  Shows current configuration and provides guidance for making changes.
-
-${chalk.yellow('Requirements:')}
-  - Ollama must be installed and running
-  - Models must be pulled with 'ollama pull <model>'
-
-${chalk.yellow('Options:')}
-  --help                    Show this help message
-
-${chalk.yellow('Examples:')}
-  ji models                 View current AI model settings
 `);
 }
 
@@ -448,7 +379,6 @@ ${chalk.yellow('Boards & Sprints:')}
 
 ${chalk.yellow('Configuration:')}
   ji config                            Discover available custom fields  
-  ji models                            Configure AI models
 
 ${chalk.yellow('Help:')}
   ji help                              Show this help message
@@ -681,90 +611,12 @@ async function main() {
         console.error('Sync command is no longer supported.');
         return;
 
-      case 'search': {
-        if (args.includes('--help')) {
-          showSearchHelp();
-          process.exit(0);
-        }
-
-        if (!subArgs[0]) {
-          console.error('Please provide a search query');
-          process.exit(1);
-        }
-
-        // Parse limit option (supports both --limit=3 and --limit 3 formats)
-        let limit = 10; // default
-        const limitIndex = args.findIndex((arg) => arg.startsWith('--limit'));
-        if (limitIndex !== -1) {
-          const limitArg = args[limitIndex];
-          if (limitArg.includes('=')) {
-            // Format: --limit=3
-            const limitValue = limitArg.split('=')[1];
-            const parsed = parseInt(limitValue);
-            if (!Number.isNaN(parsed) && parsed > 0) {
-              limit = parsed;
-            }
-          } else if (limitIndex + 1 < args.length) {
-            // Format: --limit 3
-            const parsed = parseInt(args[limitIndex + 1]);
-            if (!Number.isNaN(parsed) && parsed > 0) {
-              limit = parsed;
-            }
-          }
-        }
-
-        // Filter out --limit and its value from the query
-        const queryArgs = subArgs.filter((arg, _index) => {
-          const argIndex = subArgs.indexOf(arg);
-          const prevArg = argIndex > 0 ? subArgs[argIndex - 1] : '';
-
-          // Skip --limit=3 format
-          if (arg.startsWith('--limit')) return false;
-
-          // Skip value after --limit in --limit 3 format
-          if (prevArg === '--limit') return false;
-
-          return true;
-        });
-
-        const query = queryArgs.join(' ');
-        await search(query, {
-          source: 'jira',
-          limit,
-          includeAll: args.includes('--all'),
-        });
-        break;
-      }
-
-      case 'ask': {
-        if (args.includes('--help')) {
-          showAskHelp();
-          process.exit(0);
-        }
-        if (!subArgs[0]) {
-          console.error('Please provide a question');
-          showAskHelp();
-          process.exit(1);
-        }
-        const question = subArgs.join(' ');
-        await askQuestion(question);
-        break;
-      }
-
       case 'config':
         if (args.includes('--help')) {
           showConfigHelp();
           process.exit(0);
         }
         await configureCustomFields();
-        break;
-
-      case 'models':
-        if (args.includes('--help')) {
-          showModelsHelp();
-          process.exit(0);
-        }
-        await configureModels();
         break;
 
       case 'status':
