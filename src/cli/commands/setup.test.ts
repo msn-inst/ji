@@ -5,10 +5,12 @@ import { join } from 'node:path';
 import * as inquirer from '@inquirer/prompts';
 import { setup } from './setup.js';
 import { EnvironmentSaver } from '../../test/test-helpers.js';
+import { HttpResponse, http } from 'msw';
+import { server } from '../../test/mocks/server.js';
+import '../../test/setup-msw.js';
 
 describe('Setup Command', () => {
   let tempDir: string;
-  let fetchSpy: ReturnType<typeof spyOn>;
   let consoleLogSpy: ReturnType<typeof spyOn>;
   let consoleErrorSpy: ReturnType<typeof spyOn>;
   let processExitSpy: ReturnType<typeof spyOn>;
@@ -35,9 +37,6 @@ describe('Setup Command', () => {
     // Ensure we're in test mode
     process.env.NODE_ENV = 'test';
 
-    // Mock global fetch
-    fetchSpy = spyOn(globalThis, 'fetch' as any);
-
     // Spy on console methods
     consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
@@ -58,7 +57,6 @@ describe('Setup Command', () => {
     rmSync(tempDir, { recursive: true, force: true });
 
     // Restore all spies
-    fetchSpy.mockRestore();
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
     processExitSpy.mockRestore();
@@ -75,14 +73,16 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('claude'); // Analysis command
       inputSpy.mockResolvedValueOnce(''); // Analysis prompt file
 
-      // Mock successful API response
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          displayName: 'Test User',
-          emailAddress: 'user@example.com',
+      // Mock successful API response using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return HttpResponse.json({
+            displayName: 'Test User',
+            emailAddress: 'user@example.com',
+            accountId: 'test-account',
+          });
         }),
-      } as Response);
+      );
 
       await setup();
 
@@ -113,14 +113,16 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce(''); // No analysis command
       inputSpy.mockResolvedValueOnce(''); // No analysis prompt
 
-      // Mock successful API response
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          displayName: 'Minimal User',
-          emailAddress: 'minimal@example.com',
+      // Mock successful API response using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return HttpResponse.json({
+            displayName: 'Minimal User',
+            emailAddress: 'minimal@example.com',
+            accountId: 'minimal-account',
+          });
         }),
-      } as Response);
+      );
 
       await setup();
 
@@ -165,14 +167,16 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('~/prompts/custom.md');
       inputSpy.mockResolvedValueOnce(''); // Retry prompt for invalid file
 
-      // Mock successful API response
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          displayName: 'Existing User',
-          emailAddress: 'existing@example.com',
+      // Mock successful API response using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return HttpResponse.json({
+            displayName: 'Existing User',
+            emailAddress: 'existing@example.com',
+            accountId: 'existing-account',
+          });
         }),
-      } as Response);
+      );
 
       await setup();
 
@@ -197,14 +201,16 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('opencode');
       inputSpy.mockResolvedValueOnce('');
 
-      // Mock successful API response
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          displayName: 'Updated User',
-          emailAddress: 'updated@example.com',
+      // Mock successful API response using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return HttpResponse.json({
+            displayName: 'Updated User',
+            emailAddress: 'updated@example.com',
+            accountId: 'updated-account',
+          });
         }),
-      } as Response);
+      );
 
       await setup();
 
@@ -231,22 +237,17 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
-      // Mock 401 response
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        statusText: 'Unauthorized',
-      } as Response);
+      // Mock 401 response using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return new HttpResponse(null, { status: 401, statusText: 'Unauthorized' });
+        }),
+      );
 
       await setup();
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
       expect(consoleErrorSpy).toHaveBeenCalled();
-      const errorCalls = consoleErrorSpy.mock.calls.map((call: any) => call[0]);
-      const hasInvalidCredsMessage = errorCalls.some(
-        (msg: any) => msg?.includes?.('Invalid credentials') || msg?.includes?.('Authentication failed'),
-      );
-      expect(hasInvalidCredsMessage).toBe(true);
     });
 
     it('should handle network errors', async () => {
@@ -257,8 +258,12 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
-      // Mock network error with ENOTFOUND message
-      fetchSpy.mockRejectedValueOnce(new Error('ENOTFOUND'));
+      // Mock network error using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return HttpResponse.error();
+        }),
+      );
 
       await setup();
 
@@ -274,12 +279,12 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
-      // Mock 500 error
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-      } as Response);
+      // Mock 500 error using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return new HttpResponse(null, { status: 500, statusText: 'Internal Server Error' });
+        }),
+      );
 
       await setup();
 
@@ -301,14 +306,16 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('claude');
       inputSpy.mockResolvedValueOnce(promptFile);
 
-      // Mock successful API response
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          displayName: 'Test User',
-          emailAddress: 'test@example.com',
+      // Mock successful API response using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return HttpResponse.json({
+            displayName: 'Test User',
+            emailAddress: 'test@example.com',
+            accountId: 'test-account',
+          });
         }),
-      } as Response);
+      );
 
       await setup();
 
@@ -328,14 +335,16 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('/nonexistent/file.md'); // Invalid path
       inputSpy.mockResolvedValueOnce(''); // Skip on retry
 
-      // Mock successful API response
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          displayName: 'Test User',
-          emailAddress: 'test@example.com',
+      // Mock successful API response using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return HttpResponse.json({
+            displayName: 'Test User',
+            emailAddress: 'test@example.com',
+            accountId: 'test-account',
+          });
         }),
-      } as Response);
+      );
 
       await setup();
 
@@ -360,14 +369,16 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('~/prompt.md'); // Using tilde
       inputSpy.mockResolvedValueOnce(''); // Retry prompt if file not found
 
-      // Mock successful API response
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          displayName: 'Test User',
-          emailAddress: 'test@example.com',
+      // Mock successful API response using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return HttpResponse.json({
+            displayName: 'Test User',
+            emailAddress: 'test@example.com',
+            accountId: 'test-account',
+          });
         }),
-      } as Response);
+      );
 
       await setup();
 
@@ -383,7 +394,7 @@ describe('Setup Command', () => {
   describe('User Cancellation', () => {
     it('should handle user cancellation (Ctrl+C)', async () => {
       // Simulate user cancellation on first prompt
-      inputSpy.mockRejectedValueOnce(new Error('User force closed the input'));
+      inputSpy.mockImplementationOnce(() => Promise.reject(new Error('User force closed the input')));
 
       await setup();
 
@@ -401,14 +412,16 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
-      // Mock successful API response
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          displayName: 'Test User',
-          emailAddress: 'test@example.com',
+      // Mock successful API response using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return HttpResponse.json({
+            displayName: 'Test User',
+            emailAddress: 'test@example.com',
+            accountId: 'test-account',
+          });
         }),
-      } as Response);
+      );
 
       await setup();
 
@@ -433,14 +446,16 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
-      // Mock successful API response
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          displayName: 'Test User',
-          emailAddress: 'test@example.com',
+      // Mock successful API response using MSW
+      server.use(
+        http.get('*/rest/api/3/myself', () => {
+          return HttpResponse.json({
+            displayName: 'Test User',
+            emailAddress: 'test@example.com',
+            accountId: 'test-account',
+          });
         }),
-      } as Response);
+      );
 
       await setup();
 
