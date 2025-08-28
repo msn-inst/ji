@@ -6,7 +6,7 @@ import * as inquirer from '@inquirer/prompts';
 import { setup } from './setup.js';
 import { EnvironmentSaver } from '../../test/test-helpers.js';
 
-describe.skip('Setup Command', () => {
+describe('Setup Command', () => {
   let tempDir: string;
   let fetchSpy: ReturnType<typeof spyOn>;
   let consoleLogSpy: ReturnType<typeof spyOn>;

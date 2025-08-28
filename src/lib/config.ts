@@ -30,13 +30,15 @@ const ConfigSchema = Schema.Struct({
 
 export type Config = Schema.Schema.Type<typeof ConfigSchema>;
 
-// Settings that can be configured via CLI
-export interface Settings {
-  askModel?: string;
-  embeddingModel?: string; // Model for generating embeddings for hybrid search
-  analysisModel?: string; // Smaller, faster model for source selection and query generation
-  meilisearchIndexPrefix?: string; // Prefix for Meilisearch indexes to avoid conflicts
-}
+// Settings Schema with validation
+const SettingsSchema = Schema.Struct({
+  askModel: Schema.optional(Schema.String),
+  embeddingModel: Schema.optional(Schema.String), // Model for generating embeddings for hybrid search
+  analysisModel: Schema.optional(Schema.String), // Smaller, faster model for source selection and query generation
+  meilisearchIndexPrefix: Schema.optional(Schema.String.pipe(Schema.pattern(/^[a-zA-Z0-9_-]+$/))), // Alphanumeric + hyphen/underscore
+});
+
+export type Settings = Schema.Schema.Type<typeof SettingsSchema>;
 
 export class ConfigManager {
   private configDir: string;
@@ -99,6 +101,22 @@ export class ConfigManager {
     return null;
   }
 
+  /**
+   * Effect-based configuration update
+   */
+  setConfigEffect(config: Config): Effect.Effect<void, ValidationError | FileError> {
+    return pipe(
+      Schema.decodeUnknown(ConfigSchema)(config),
+      Effect.mapError((error) => new ValidationError(`Invalid config: ${error}`)),
+      Effect.flatMap((validated) =>
+        Effect.try(() => {
+          writeFileSync(this.configFile, JSON.stringify(validated, null, 2), 'utf-8');
+          chmodSync(this.configFile, 0o600);
+        }).pipe(Effect.mapError((error) => new FileError(`Failed to save config: ${error}`))),
+      ),
+    );
+  }
+
   async setConfig(config: Config): Promise<void> {
     const validated = Schema.decodeUnknownSync(ConfigSchema)(config);
 
@@ -107,6 +125,35 @@ export class ConfigManager {
 
     // Set file permissions to 600 (read/write for owner only)
     chmodSync(this.configFile, 0o600);
+  }
+
+  /**
+   * Effect-based settings retrieval
+   */
+  getSettingsEffect(): Effect.Effect<Settings, FileError | ParseError | ValidationError> {
+    return pipe(
+      Effect.sync(() => existsSync(this.settingsFile)),
+      Effect.flatMap((fileExists) => {
+        if (!fileExists) {
+          return Effect.succeed({} as Settings);
+        }
+
+        return pipe(
+          Effect.try(() => readFileSync(this.settingsFile, 'utf-8')),
+          Effect.mapError((error) => new FileError(`Failed to read settings file: ${error}`)),
+          Effect.flatMap((data) =>
+            Effect.try(() => JSON.parse(data)).pipe(
+              Effect.mapError((error) => new ParseError(`Invalid JSON in settings file: ${error}`)),
+            ),
+          ),
+          Effect.flatMap((settings) =>
+            Schema.decodeUnknown(SettingsSchema)(settings).pipe(
+              Effect.mapError((error) => new ValidationError(`Invalid settings schema: ${error}`)),
+            ),
+          ),
+        );
+      }),
+    );
   }
 
   // Settings management (stored in JSON file)
@@ -120,6 +167,22 @@ export class ConfigManager {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Effect-based settings update
+   */
+  setSettingsEffect(settings: Settings): Effect.Effect<void, FileError | ValidationError> {
+    return pipe(
+      Schema.decodeUnknown(SettingsSchema)(settings),
+      Effect.mapError((error) => new ValidationError(`Invalid settings: ${error}`)),
+      Effect.flatMap((validatedSettings) =>
+        Effect.try(() => {
+          writeFileSync(this.settingsFile, JSON.stringify(validatedSettings, null, 2), 'utf-8');
+          chmodSync(this.settingsFile, 0o600);
+        }).pipe(Effect.mapError((error) => new FileError(`Failed to save settings: ${error}`))),
+      ),
+    );
   }
 
   async setSetting(key: string, value: string): Promise<void> {
@@ -148,6 +211,32 @@ export class ConfigManager {
     } catch {}
 
     return {};
+  }
+
+  /**
+   * Effect-based Meilisearch index prefix retrieval
+   */
+  getMeilisearchIndexPrefixEffect(): Effect.Effect<string, never> {
+    return pipe(
+      this.getSettingsEffect(),
+      Effect.orElseSucceed(() => ({}) as Settings),
+      Effect.flatMap((settings) => {
+        if (settings.meilisearchIndexPrefix) {
+          return Effect.succeed(settings.meilisearchIndexPrefix);
+        }
+
+        // Try to get from config email
+        return pipe(
+          this.getConfigEffect(),
+          Effect.map((config) => {
+            const emailLocal = config.email.split('@')[0];
+            // Sanitize for Meilisearch (alphanumeric + hyphen/underscore only)
+            return emailLocal.replace(/[^a-zA-Z0-9_-]/g, '_');
+          }),
+          Effect.orElseSucceed(() => 'ji'), // Final fallback
+        );
+      }),
+    );
   }
 
   /**
