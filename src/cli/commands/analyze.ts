@@ -122,7 +122,7 @@ const getConfiguration = Effect.gen(function* () {
     });
 
     if (!config) {
-      return yield* Effect.fail(new ConfigurationError('Not authenticated. Please run "ji auth" first.'));
+      return yield* Effect.fail(new ConfigurationError('Not authenticated. Please run "ji setup" first.'));
     }
 
     return config;

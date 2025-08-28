@@ -79,7 +79,7 @@ export class ConfigManager {
         }
 
         // No configuration found
-        return Effect.fail(new ConfigError('No configuration found. Please run "ji auth" first.'));
+        return Effect.fail(new ConfigError('No configuration found. Please run "ji setup" first.'));
       }),
     );
   }

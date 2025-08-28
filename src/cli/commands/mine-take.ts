@@ -8,7 +8,7 @@ export async function takeIssue(issueKey: string) {
   try {
     const config = await configManager.getConfig();
     if (!config) {
-      console.error(chalk.red('No configuration found. Please run "ji auth" first.'));
+      console.error(chalk.red('No configuration found. Please run "ji setup" first.'));
       process.exit(1);
     }
 

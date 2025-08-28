@@ -56,7 +56,7 @@ const openIssueEffect = (issueKey: string): Effect.Effect<void, OpenCommandError
       try {
         const config = await configManager.getConfig();
         if (!config) {
-          throw new ConfigError('No configuration found. Run "ji auth" to set up authentication');
+          throw new ConfigError('No configuration found. Run "ji setup" to set up authentication');
         }
 
         const jiraUrl = config.jiraUrl.replace(/\/$/, ''); // Remove trailing slash
@@ -81,7 +81,7 @@ const handleError = (error: OpenCommandError | ConfigError | BrowserOpenError): 
       console.error(chalk.red(`Error: ${error.message}`));
       break;
     case 'ConfigError':
-      console.error(chalk.red(`Configuration error: ${error.message}\nRun 'ji auth' to set up authentication`));
+      console.error(chalk.red(`Configuration error: ${error.message}\nRun 'ji setup' to set up authentication`));
       break;
     case 'BrowserOpenError':
       console.error(chalk.red(`Browser error: ${error.message}`));

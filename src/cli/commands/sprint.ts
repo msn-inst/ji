@@ -32,7 +32,7 @@ export async function showSprint(projectFilter?: string, options: { unassigned?:
     const config = await configManager.getConfig();
 
     if (!config) {
-      console.error('No configuration found. Please run "ji auth" first.');
+      console.error('No configuration found. Please run "ji setup" first.');
       process.exit(1);
     }
 
