@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a **fast, API-driven CLI** for Jira & Confluence built with:
+This is a **fast, API-driven CLI** for Jira built with:
 - Bun (runtime and package manager)
 - TypeScript
 - Effect and Effect Schema (functional programming with type-safe error handling)
@@ -24,9 +24,8 @@ Inspired by [jira-cli](https://github.com/ankitpokhrel/jira-cli).
 3. **Secure auth storage**: Credentials in `~/.ji/config.json` (600 permissions)
 4. **Smart filtering**: JQL-powered queries for efficient status, time, and assignee filtering
 5. **Security**: API keys stored securely, never in git or environment variables
-6. **Cross-platform search**: API-based search across Jira and Confluence content
-7. **Human-first output**: Pretty colored output by default, with --xml flag for LLM compatibility
-8. **Effect-first**: Use Effect and Effect Schema comprehensively for type-safe operations, proper error handling, and composable functions
+6. **Human-first output**: Pretty colored output by default, with --xml flag for LLM compatibility
+7. **Effect-first**: Use Effect and Effect Schema comprehensively for type-safe operations, proper error handling, and composable functions
 
 ## Development Guidelines
 
@@ -49,10 +48,10 @@ ji test                      # Run all integration tests
 
 ```bash
 # Find all function calls to a specific API
-ast-grep --pattern 'ollama.generate($$$)' src/
+ast-grep --pattern 'jiraClient.getIssue($$$)' src/
 
-# Find and replace model parameter patterns
-ast-grep --pattern 'model: options.model || "gemma3n:latest"' --rewrite 'model: askModel' src/
+# Find and replace configuration patterns
+ast-grep --pattern 'config.jiraUrl' src/
 
 # Find all async functions that don't have proper error handling
 ast-grep --pattern 'async function $NAME($$$) { $$$ }' src/ | ast-grep --pattern 'try { $$$ }' --invert-match
@@ -217,17 +216,14 @@ src/
 │       ├── auth.ts           # Authentication setup
 │       ├── issue.ts          # Issue viewing (API-only, Effect-based)
 │       ├── mine.ts           # Personal issues with filtering (API-only)
-│       ├── search.ts         # Search across Jira/Confluence (API-only)
 │       ├── memory.ts         # Memory management
 │       ├── comment.ts        # Add comments to issues (Effect-based)
 │       ├── board.ts          # Board and sprint management
 │       └── test.ts           # Testing framework (comprehensive Effect usage)
 └── lib/                      # Shared libraries
     ├── config.ts             # Configuration & auth management (Effect-based)
-    ├── ollama.ts             # Ollama integration for LLM
     ├── jira-client.ts        # Jira API client (LARGE FILE - needs splitting)
-    ├── confluence-client.ts  # Confluence API client
-    └── confluence-converter.ts # Convert storage format to text
+    └── jira-client/          # Jira client components
 ```
 
 ### Code Organization Guidelines
@@ -253,8 +249,6 @@ src/
 
 - ✅ Jira issue viewing with direct API access (Effect-based)
 - ✅ Advanced filtering: status, time ranges, assignees (JQL-powered)
-- ✅ Cross-platform search across Jira and Confluence content
-- ✅ AI-powered Q&A with `ji ask` (uses Ollama + gemma3n)
 - ✅ Always-fresh data from live API calls
 - ✅ Secure credential storage
 - ✅ `ji mine` command with powerful filtering (YAML output)
@@ -272,7 +266,6 @@ The project includes a comprehensive testing framework built with Effect:
 
 ### Features
 - **Environment-specific tests**: Uses real issue keys and projects from your environment
-- **LLM-based validation**: Uses Ollama to validate `ji ask` responses for quality and relevance
 - **Comprehensive coverage**: Tests all major commands with appropriate validation strategies
 - **Effect-based architecture**: Demonstrates comprehensive Effect usage patterns
 - **Security-conscious**: Test configs are gitignored and stored locally
@@ -291,9 +284,7 @@ ji test            # Run all configured tests
 - Mutable types for runtime updates while preserving schema validation
 
 ### Example Commands Tested
-- `ji search "query"` - Pattern validation for YAML output
 - `ji issue view KEY` - Issue data structure validation
-- `ji ask "question"` - LLM-based answer quality assessment
 - `ji mine --status "In Progress" --since 24h` - Filtered issue retrieval validation
 - `ji mine` - Personal issue retrieval validation
 
@@ -301,7 +292,6 @@ ji test            # Run all configured tests
 
 - Complete Effect migration for remaining async/Promise code
 - More Jira commands (create, update issues) with Effect-based operations
-- Confluence page creation/editing
 - Advanced filtering combinations (multiple projects, custom JQL)
 - Batch operations (bulk update issues)
 - CI/CD integration with seeded test data

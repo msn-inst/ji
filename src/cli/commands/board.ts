@@ -37,14 +37,8 @@ const getConfigEffect = () =>
 const getBoardsEffect = (jiraClient: JiraClient, projectFilter?: string) =>
   Effect.tryPromise({
     try: async () => {
-      // Always fetch fresh data from API
-      const boards = await jiraClient.getBoards();
-
-      // Apply project filter if specified
-      if (projectFilter) {
-        return boards.filter((board) => board.location?.projectKey?.toUpperCase() === projectFilter.toUpperCase());
-      }
-
+      // Always fetch fresh data from API with project filter if specified
+      const boards = await jiraClient.getBoards(projectFilter ? { projectKeyOrId: projectFilter } : undefined);
       return boards;
     },
     catch: (error) => new Error(`Failed to fetch boards from API: ${error}`),
