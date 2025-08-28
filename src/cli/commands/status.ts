@@ -17,13 +17,21 @@ const checkConnectionEffect = Effect.gen(function* () {
   yield* Console.log(chalk.gray('Checking Jira connection...'));
 
   const configManager = new ConfigManager();
-  const config = yield* Effect.promise(() => configManager.getConfig());
-
-  if (!config) {
-    return yield* Effect.fail(
-      new ConfigurationError('No configuration found. Please run "ji setup" first.')
-    );
-  }
+  const config = yield* Effect.tryPromise({
+    try: async () => {
+      const cfg = await configManager.getConfig();
+      if (!cfg) {
+        throw new ConfigurationError('No configuration found. Please run "ji setup" first.');
+      }
+      return cfg;
+    },
+    catch: (error) => {
+      if (error instanceof ConfigurationError) {
+        return error;
+      }
+      return new ConfigurationError('Failed to load configuration');
+    },
+  });
 
   const jiraClient = new JiraClient(config);
 
@@ -32,7 +40,7 @@ const checkConnectionEffect = Effect.gen(function* () {
     try: () => jiraClient.getCurrentUser(),
     catch: (error) => {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      
+
       if (message.includes('401') || message.includes('Unauthorized')) {
         return new ConnectionError('Authentication failed. Please check your API token.');
       } else if (message.includes('404')) {
@@ -41,7 +49,7 @@ const checkConnectionEffect = Effect.gen(function* () {
         return new ConnectionError('Cannot reach Jira server. Please check your internet connection and URL.');
       }
       return new ConnectionError(`Failed to connect: ${message}`);
-    }
+    },
   });
 
   yield* Console.log(chalk.green('✓ Successfully connected to Jira'));
@@ -59,81 +67,87 @@ const checkConnectionEffect = Effect.gen(function* () {
   }
 
   // Try to fetch issue statistics (optional)
-  yield* Effect.tryPromise({
+  const statsEffect = Effect.tryPromise({
     try: async () => {
       const jql = 'assignee = currentUser() AND status NOT IN (Closed, Done, Resolved)';
       const result = await jiraClient.searchIssues(jql, { maxResults: 0 });
-      
-      await Console.log().pipe(Effect.runPromise);
-      await Console.log(chalk.gray('Statistics:')).pipe(Effect.runPromise);
-      await Console.log(`  Open issues assigned to you: ${chalk.cyan(result.total)}`).pipe(Effect.runPromise);
-      
       return result;
     },
-    catch: () => {
-      // Silently ignore statistics errors
-      return null;
-    }
+    catch: () => new Error('Failed to fetch statistics'),
   });
+
+  // Display statistics if available, but don't fail if we can't get them
+  yield* pipe(
+    statsEffect,
+    Effect.tap((result) =>
+      pipe(
+        Console.log(),
+        Effect.flatMap(() => Console.log(chalk.gray('Statistics:'))),
+        Effect.flatMap(() => Console.log(`  Open issues assigned to you: ${chalk.cyan(result.total)}`)),
+      ),
+    ),
+    Effect.catchAll(() => Effect.succeed(undefined)), // Silently ignore statistics errors
+  );
 
   // Clean up resources
   configManager.close();
-  
+
   return { config, currentUser };
 });
 
 // Main effect with comprehensive error handling
 const statusEffect = pipe(
   checkConnectionEffect,
-  Effect.catchAll((error) => {
-    switch (error._tag) {
-      case 'ConfigurationError':
-        return pipe(
-          Console.error(chalk.red(`✗ ${error.message}`)),
-          Effect.flatMap(() => Effect.fail(error))
-        );
-      
-      case 'ConnectionError':
-        return pipe(
-          Console.error(chalk.red('✗ Failed to connect to Jira')),
-          Effect.flatMap(() => Console.error()),
-          Effect.flatMap(() => Console.error(chalk.yellow(error.message))),
-          Effect.flatMap(() => {
-            if (error.message.includes('Authentication failed')) {
-              return pipe(
-                Console.error(chalk.gray('You can generate a new token at:')),
-                Effect.flatMap(() => Console.error(chalk.cyan('https://id.atlassian.com/manage/api-tokens')))
-              );
-            } else if (error.message.includes('URL might be incorrect')) {
-              return Console.error(chalk.gray('Please verify your Jira URL configuration.'));
-            } else if (error.message.includes('Cannot reach Jira server')) {
-              return pipe(
-                Console.error(chalk.gray('  - Your internet connection')),
-                Effect.flatMap(() => Console.error(chalk.gray('  - The Jira URL is correct')))
-              );
-            }
-            return Effect.succeed(undefined);
-          }),
-          Effect.flatMap(() => Console.error()),
-          Effect.flatMap(() => Console.error(chalk.gray('Run "ji setup" to reconfigure your connection.'))),
-          Effect.flatMap(() => Effect.fail(error))
-        );
-      
-      default:
-        return pipe(
-          Console.error(chalk.red('Status check failed:')),
-          Effect.flatMap(() => Console.error(error instanceof Error ? error.message : 'Unknown error')),
-          Effect.flatMap(() => Effect.fail(error))
-        );
+  Effect.catchAll((error: ConnectionError | ConfigurationError | Error) => {
+    // Type guard for our custom errors
+    if (error instanceof ConfigurationError) {
+      return pipe(
+        Console.error(chalk.red(`✗ ${error.message}`)),
+        Effect.flatMap(() => Effect.fail(error)),
+      );
     }
-  })
+
+    if (error instanceof ConnectionError) {
+      return pipe(
+        Console.error(chalk.red('✗ Failed to connect to Jira')),
+        Effect.flatMap(() => Console.error()),
+        Effect.flatMap(() => Console.error(chalk.yellow(error.message))),
+        Effect.flatMap(() => {
+          if (error.message.includes('Authentication failed')) {
+            return pipe(
+              Console.error(chalk.gray('You can generate a new token at:')),
+              Effect.flatMap(() => Console.error(chalk.cyan('https://id.atlassian.com/manage/api-tokens'))),
+            );
+          } else if (error.message.includes('URL might be incorrect')) {
+            return Console.error(chalk.gray('Please verify your Jira URL configuration.'));
+          } else if (error.message.includes('Cannot reach Jira server')) {
+            return pipe(
+              Console.error(chalk.gray('  - Your internet connection')),
+              Effect.flatMap(() => Console.error(chalk.gray('  - The Jira URL is correct'))),
+            );
+          }
+          return Effect.succeed(undefined);
+        }),
+        Effect.flatMap(() => Console.error()),
+        Effect.flatMap(() => Console.error(chalk.gray('Run "ji setup" to reconfigure your connection.'))),
+        Effect.flatMap(() => Effect.fail(error)),
+      );
+    }
+
+    // Default case for unknown errors
+    return pipe(
+      Console.error(chalk.red('Status check failed:')),
+      Effect.flatMap(() => Console.error(error instanceof Error ? error.message : 'Unknown error')),
+      Effect.flatMap(() => Effect.fail(error)),
+    );
+  }),
 );
 
 // Async wrapper for CLI compatibility
 export async function statusCommand(): Promise<void> {
   try {
     await Effect.runPromise(statusEffect);
-  } catch (error) {
+  } catch (_error) {
     // Error already displayed by Effect error handling
     process.exit(1);
   }
