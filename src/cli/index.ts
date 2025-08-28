@@ -49,14 +49,16 @@ ${chalk.yellow('Subcommands:')}
 
 
 ${chalk.yellow('Options:')}
-  --json                    Output in JSON format (for view)
-
+  --xml                     Output in XML format for LLM parsing
+  --json                    Alias for --xml (deprecated)
   --help                    Show this help message
 
 ${chalk.yellow('Note:')}
-  By default, 'ji issue view' fetches fresh data from Jira.
+  By default, 'ji issue view' shows pretty colored output.
+  Use --xml for LLM-friendly XML output.
 ${chalk.yellow('Examples:')}
-  ji issue view EVAL-123    # View issue details
+  ji issue view EVAL-123    # View issue with pretty output
+  ji issue view EVAL-123 --xml # View issue in XML format
   ji sprint ABC             # Show current sprint for project ABC
 `);
 }
@@ -434,7 +436,8 @@ ${chalk.yellow('Issues:')}
   ji comment <issue-key> [comment]     Add a comment to an issue
   ji analyze <issue-key-or-url>        Analyze issue with AI
   ji log <issue-key>                   Interactive comment viewer/editor
-  ji <issue-key>                       View issue (fetches fresh data)
+  ji <issue-key>                       View issue (pretty output by default)
+  ji <issue-key> --xml                 View issue in XML format
 
   ji issue view <issue-key>            View issue details (alias)
   ji issue sync <project-key>          Sync all issues from a project
@@ -452,7 +455,8 @@ ${chalk.yellow('Help:')}
   ji [command] --help                  Show help for a specific command
 
 ${chalk.gray('Examples:')}
-  ji ABC-123                           View issue ABC-123
+  ji ABC-123                           View issue with pretty colors
+  ji ABC-123 --xml                    View issue in XML format
   ji mine                              Show your assigned issues
   ji mine --status "In Progress"      Filter by status
   ji analyze ABC-123                   Analyze issue with AI
@@ -643,7 +647,7 @@ async function main() {
         }
 
         if (subArgs[0] === 'view' && subArgs[1]) {
-          await viewIssue(subArgs[1], { json: args.includes('--json') });
+          await viewIssue(subArgs[1], { xml: args.includes('--xml'), json: args.includes('--json') });
         } else {
           console.error('Invalid issue command. Use "ji issue view <key>"');
           showIssueHelp();
@@ -774,7 +778,7 @@ async function main() {
       default:
         // Check if it's an issue key (e.g., ABC-123)
         if (/^[A-Z]+-\d+$/.test(command)) {
-          await viewIssue(command, { json: args.includes('--json') });
+          await viewIssue(command, { xml: args.includes('--xml'), json: args.includes('--json') });
         } else {
           console.error(`Unknown command: ${command}`);
           console.log('Run "ji help" for usage information');
