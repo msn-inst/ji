@@ -1,20 +1,39 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { IssueSchema } from '../lib/effects/jira/schemas';
 import { createValidIssue, validateAndReturn } from './msw-schema-validation';
 import { installFetchMock, restoreFetch } from './test-fetch-mock';
 
 // Integration tests for the actual `ji EVAL-5767` command flow
 // Tests the real viewIssue function from issue.ts with comments
-// NOTE: These tests are skipped in CI because they require file system access
-// and SQLite database operations that are not available in the CI environment
+
+let tempDir: string;
 
 beforeEach(() => {
-  // Clean state for each test
+  // Create temp directory for test config
+  tempDir = mkdtempSync(join(tmpdir(), 'ji-issue-test-'));
+  process.env.JI_CONFIG_DIR = tempDir;
+
+  // Create mock config file
+  const mockConfig = {
+    jiraUrl: 'https://test.atlassian.net',
+    email: 'test@example.com',
+    apiToken: 'test-token-123',
+  };
+  writeFileSync(join(tempDir, 'config.json'), JSON.stringify(mockConfig), { mode: 0o600 });
 });
 
 afterEach(() => {
   restoreFetch();
   delete process.env.ALLOW_REAL_API_CALLS;
+  delete process.env.JI_CONFIG_DIR;
+
+  // Clean up temp directory
+  if (tempDir) {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
 });
 
 test('ji EVAL-5767 command - real issue viewing with comments array processing', async () => {
@@ -127,7 +146,7 @@ test('ji EVAL-5767 command - real issue viewing with comments array processing',
     const { viewIssue } = await import('../cli/commands/issue');
 
     // This is the actual function that runs when you type `ji EVAL-5767`
-    await viewIssue('EVAL-5767', { json: false, local: true });
+    await viewIssue('EVAL-5767', { json: false });
 
     const output = consoleLogs.join('\n');
 
@@ -236,7 +255,7 @@ test('ji EVAL-5767 command - handles issues with no comments', async () => {
 
   try {
     const { viewIssue } = await import('../cli/commands/issue');
-    await viewIssue('EVAL-1234', { json: false, local: true });
+    await viewIssue('EVAL-1234', { json: false });
 
     const output = consoleLogs.join('\n');
 
@@ -319,7 +338,7 @@ test('ji EVAL-5767 command - handles issues with empty comments array', async ()
 
   try {
     const { viewIssue } = await import('../cli/commands/issue');
-    await viewIssue('EVAL-5678', { json: false, local: true });
+    await viewIssue('EVAL-5678', { json: false });
 
     const output = consoleLogs.join('\n');
 
