@@ -355,11 +355,12 @@ function showAnalyzeHelp() {
 ${chalk.bold('ji analyze - Analyze Jira issue with AI')}
 
 ${chalk.yellow('Usage:')}
-  ji analyze <issue-key> [options]
+  ji analyze <issue-key-or-url> [options]
 
 ${chalk.yellow('Description:')}
   Uses AI to analyze a Jira issue and output insights.
   Automatically detects available tools (claude, gemini, opencode).
+  Accepts both issue keys (EVAL-123) and Jira URLs.
 
 ${chalk.yellow('Options:')}
   --prompt <file>           Use custom prompt file (overrides config)
@@ -369,7 +370,8 @@ ${chalk.yellow('Options:')}
   --help                    Show this help message
 
 ${chalk.yellow('Examples:')}
-  ji analyze EVAL-123                           # Just output analysis
+  ji analyze EVAL-123                           # Using issue key
+  ji analyze https://company.atlassian.net/browse/EVAL-123  # Using URL
   ji analyze EVAL-123 --comment                 # Analyze and prompt to post
   ji analyze EVAL-123 --comment --yes           # Post without confirmation
   ji analyze EVAL-123 --prompt ./custom.md      # Use custom prompt
@@ -430,7 +432,7 @@ ${chalk.yellow('Issues:')}
   ji done <issue-key>                  Mark an issue as Done
   ji open <issue-key>                  Open issue in browser
   ji comment <issue-key> [comment]     Add a comment to an issue
-  ji analyze <issue-key> [options]     Analyze issue with AI and post comment
+  ji analyze <issue-key-or-url>        Analyze issue with AI
   ji log <issue-key>                   Interactive comment viewer/editor
   ji <issue-key>                       View issue (fetches fresh data)
 
@@ -556,7 +558,7 @@ async function main() {
           process.exit(0);
         }
         if (!subArgs[0]) {
-          console.error('Please specify an issue key');
+          console.error('Please specify an issue key or URL');
           showAnalyzeHelp();
           process.exit(1);
         }
