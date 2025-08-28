@@ -71,6 +71,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://example.atlassian.net/'); // Jira URL with trailing slash
       inputSpy.mockResolvedValueOnce('user@example.com'); // Email
       passwordSpy.mockResolvedValueOnce('test-token-123'); // API Token
+      inputSpy.mockResolvedValueOnce('PROJ'); // Default project
       inputSpy.mockResolvedValueOnce('claude'); // Analysis command
       inputSpy.mockResolvedValueOnce(''); // Analysis prompt file
 
@@ -94,9 +95,10 @@ describe('Setup Command', () => {
       expect(savedConfig.email).toBe('user@example.com');
       expect(savedConfig.apiToken).toBe('test-token-123');
       expect(savedConfig.analysisCommand).toBe('claude');
+      expect(savedConfig.defaultProject).toBe('PROJ');
 
       // Verify prompts were called
-      expect(inputSpy).toHaveBeenCalledTimes(4);
+      expect(inputSpy).toHaveBeenCalledTimes(5);
       expect(passwordSpy).toHaveBeenCalledTimes(1);
 
       // Verify no error exit
@@ -107,6 +109,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://minimal.atlassian.net');
       inputSpy.mockResolvedValueOnce('minimal@example.com');
       passwordSpy.mockResolvedValueOnce('minimal-token');
+      inputSpy.mockResolvedValueOnce(''); // No default project
       inputSpy.mockResolvedValueOnce(''); // No analysis command
       inputSpy.mockResolvedValueOnce(''); // No analysis prompt
 
@@ -157,6 +160,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://existing.atlassian.net');
       inputSpy.mockResolvedValueOnce('existing@example.com');
       passwordSpy.mockResolvedValueOnce(''); // Empty means keep existing
+      inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('gemini');
       inputSpy.mockResolvedValueOnce('~/prompts/custom.md');
       inputSpy.mockResolvedValueOnce(''); // Retry prompt for invalid file
@@ -189,6 +193,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://updated.atlassian.net');
       inputSpy.mockResolvedValueOnce('updated@example.com');
       passwordSpy.mockResolvedValueOnce('updated-token');
+      inputSpy.mockResolvedValueOnce('NEWPROJ'); // Default project
       inputSpy.mockResolvedValueOnce('opencode');
       inputSpy.mockResolvedValueOnce('');
 
@@ -211,6 +216,7 @@ describe('Setup Command', () => {
       expect(savedConfig.apiToken).toBe('updated-token');
       expect(savedConfig.analysisCommand).toBe('opencode');
       expect(savedConfig.analysisPrompt).toBeUndefined(); // Cleared
+      expect(savedConfig.defaultProject).toBe('NEWPROJ');
 
       expect(processExitSpy).not.toHaveBeenCalled();
     });
@@ -221,6 +227,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://test.atlassian.net');
       inputSpy.mockResolvedValueOnce('test@example.com');
       passwordSpy.mockResolvedValueOnce('invalid-token');
+      inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
@@ -246,6 +253,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://unreachable.atlassian.net');
       inputSpy.mockResolvedValueOnce('test@example.com');
       passwordSpy.mockResolvedValueOnce('test-token');
+      inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
@@ -267,6 +275,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://error.atlassian.net');
       inputSpy.mockResolvedValueOnce('test@example.com');
       passwordSpy.mockResolvedValueOnce('test-token');
+      inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
@@ -298,6 +307,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://test.atlassian.net');
       inputSpy.mockResolvedValueOnce('test@example.com');
       passwordSpy.mockResolvedValueOnce('test-token');
+      inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('claude');
       inputSpy.mockResolvedValueOnce(promptFile);
 
@@ -323,6 +333,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://test.atlassian.net');
       inputSpy.mockResolvedValueOnce('test@example.com');
       passwordSpy.mockResolvedValueOnce('test-token');
+      inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('claude');
       inputSpy.mockResolvedValueOnce('/nonexistent/file.md'); // Invalid path
       inputSpy.mockResolvedValueOnce(''); // Skip on retry
@@ -354,6 +365,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://test.atlassian.net');
       inputSpy.mockResolvedValueOnce('test@example.com');
       passwordSpy.mockResolvedValueOnce('test-token');
+      inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('claude');
       inputSpy.mockResolvedValueOnce('~/prompt.md'); // Using tilde
       inputSpy.mockResolvedValueOnce(''); // Retry prompt if file not found
@@ -395,6 +407,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://test.atlassian.net');
       inputSpy.mockResolvedValueOnce('test@example.com');
       passwordSpy.mockResolvedValueOnce('test-token');
+      inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
@@ -426,6 +439,7 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('https://trailing.atlassian.net/'); // With trailing slash
       inputSpy.mockResolvedValueOnce('test@example.com');
       passwordSpy.mockResolvedValueOnce('test-token');
+      inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 

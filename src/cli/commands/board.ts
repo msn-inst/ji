@@ -151,14 +151,16 @@ const formatPrettyBoardOutputEffect = (boards: Board[], projectFilter?: string) 
 const showMyBoardsEffect = (projectFilter?: string, pretty = false) =>
   pipe(
     getConfigEffect(),
-    Effect.flatMap(({ configManager, jiraClient }) =>
+    Effect.flatMap(({ config, configManager, jiraClient }) =>
       pipe(
-        getBoardsEffect(jiraClient, projectFilter),
+        // Use default project if no filter specified
+        getBoardsEffect(jiraClient, projectFilter || config.defaultProject),
         Effect.flatMap((boards) => {
+          const effectiveProject = projectFilter || config.defaultProject;
           if (pretty) {
-            return formatPrettyBoardOutputEffect(boards, projectFilter);
+            return formatPrettyBoardOutputEffect(boards, effectiveProject);
           } else {
-            return formatBoardOutputEffect(boards, projectFilter);
+            return formatBoardOutputEffect(boards, effectiveProject);
           }
         }),
         Effect.tap(() =>

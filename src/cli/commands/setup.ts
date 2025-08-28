@@ -45,6 +45,7 @@ const saveConfig = (config: {
   apiToken: string;
   analysisPrompt?: string;
   analysisCommand?: string;
+  defaultProject?: string;
 }) =>
   Effect.tryPromise({
     try: async () => {
@@ -167,6 +168,12 @@ const setupEffect = () =>
                 existingConfig?.apiToken ||
                 '';
 
+              // Default project key
+              const defaultProject = await input({
+                message: 'Default project key (e.g., PROJ) for sprint/board commands (optional)',
+                default: existingConfig?.defaultProject || '',
+              });
+
               console.log('');
               console.log(chalk.yellow('Optional: AI Analysis Configuration'));
 
@@ -221,6 +228,7 @@ const setupEffect = () =>
                 apiToken,
                 ...(analysisCommand && { analysisCommand }),
                 ...(analysisPrompt && { analysisPrompt }),
+                ...(defaultProject && { defaultProject }),
               };
             },
             catch: (error) => {
