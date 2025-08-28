@@ -45,9 +45,7 @@
   },
   "keywords": [
     "jira",
-    "confluence",
-    "cli",
-    "daemon"
+    "cli"
   ],
   "author": "Aaron Shafovaloff <aaronshaf@gmail.com>",
   "license": "MIT",

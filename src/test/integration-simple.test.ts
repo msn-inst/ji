@@ -9,7 +9,6 @@ test('Integration test framework MVP - environment protection works', () => {
 
   // Import the clients - they should throw because NODE_ENV=test
   const { JiraClient } = require('../lib/jira-client.js');
-  const { ConfluenceClient } = require('../lib/confluence-client.js');
 
   const mockConfig = {
     jiraUrl: 'https://test.atlassian.net',
@@ -18,9 +17,8 @@ test('Integration test framework MVP - environment protection works', () => {
     userId: 'test-user-id',
   };
 
-  // These should throw in test environment
+  // This should throw in test environment
   expect(() => new JiraClient(mockConfig)).toThrow('Real API calls detected in test environment!');
-  expect(() => new ConfluenceClient(mockConfig)).toThrow('Real API calls detected in test environment!');
 });
 
 test('Integration test framework MVP - can bypass protection for testing', () => {
