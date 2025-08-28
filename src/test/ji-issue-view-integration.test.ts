@@ -146,7 +146,7 @@ test('ji EVAL-5767 command - real issue viewing with comments array processing',
     const { viewIssue } = await import('../cli/commands/issue');
 
     // This is the actual function that runs when you type `ji EVAL-5767`
-    await viewIssue('EVAL-5767', { json: false });
+    await viewIssue('EVAL-5767', { xml: true });
 
     const output = consoleLogs.join('\n');
 
@@ -255,7 +255,7 @@ test('ji EVAL-5767 command - handles issues with no comments', async () => {
 
   try {
     const { viewIssue } = await import('../cli/commands/issue');
-    await viewIssue('EVAL-1234', { json: false });
+    await viewIssue('EVAL-1234', { xml: true });
 
     const output = consoleLogs.join('\n');
 
@@ -338,7 +338,7 @@ test('ji EVAL-5767 command - handles issues with empty comments array', async ()
 
   try {
     const { viewIssue } = await import('../cli/commands/issue');
-    await viewIssue('EVAL-5678', { json: false });
+    await viewIssue('EVAL-5678', { xml: true });
 
     const output = consoleLogs.join('\n');
 
