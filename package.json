@@ -1,6 +1,6 @@
 {
   "name": "@aaronshaf/ji",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Jira CLI with LLM-friendly output",
   "type": "module",
   "bin": {
