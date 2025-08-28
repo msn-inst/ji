@@ -70,6 +70,7 @@ The analyze command:
 - Outputs clean analysis text by default
 - Use `--comment` flag to post as Jira comment
 - Auto-detects available AI tools or uses configured preference
+- **Works best when run from the code directory/repo related to the Jira issue** for context-aware analysis
 
 #### Custom Analysis Prompts
 

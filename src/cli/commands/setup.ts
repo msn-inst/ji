@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
+import { spawn } from 'node:child_process';
 import chalk from 'chalk';
 import { input, password } from '@inquirer/prompts';
 import { Console, Effect, pipe } from 'effect';
@@ -66,6 +67,39 @@ const expandTilde = (path: string): string => {
   return path;
 };
 
+// Check if a command exists on the system
+const checkCommandExists = (command: string): Promise<boolean> =>
+  new Promise((resolve) => {
+    const child = spawn('which', [command], { stdio: 'ignore' });
+    child.on('close', (code) => {
+      resolve(code === 0);
+    });
+    child.on('error', () => {
+      resolve(false);
+    });
+  });
+
+// AI tools to check for in order of preference
+const AI_TOOLS = ['claude', 'gemini', 'opencode', 'ollama'] as const;
+
+// Effect wrapper for detecting available AI tools
+const detectAvailableAITools = () =>
+  Effect.tryPromise({
+    try: async () => {
+      const availableTools: string[] = [];
+
+      for (const tool of AI_TOOLS) {
+        const exists = await checkCommandExists(tool);
+        if (exists) {
+          availableTools.push(tool);
+        }
+      }
+
+      return availableTools;
+    },
+    catch: (error) => new Error(`Failed to detect AI tools: ${error}`),
+  });
+
 // Validate analysis prompt file path
 const validateAnalysisPromptFile = (path: string): string | undefined => {
   if (!path) {
@@ -98,8 +132,8 @@ const getExistingConfig = () =>
 // Pure Effect-based setup implementation using inquirer
 const setupEffect = () =>
   pipe(
-    getExistingConfig(),
-    Effect.flatMap((existingConfig) =>
+    Effect.all([getExistingConfig(), detectAvailableAITools()]),
+    Effect.flatMap(([existingConfig, availableTools]) =>
       pipe(
         Console.log('Jira & Confluence CLI Authentication Setup'),
         Effect.flatMap(() => {
@@ -136,10 +170,24 @@ const setupEffect = () =>
               console.log('');
               console.log(chalk.yellow('Optional: AI Analysis Configuration'));
 
-              // Analysis command
+              // Show detected AI tools
+              if (availableTools.length > 0) {
+                console.log(chalk.dim(`Detected AI tools: ${availableTools.join(', ')}`));
+              }
+
+              // Get default suggestion (claude first if available, otherwise first detected tool)
+              const defaultCommand =
+                existingConfig?.analysisCommand ||
+                (availableTools.includes('claude') ? 'claude' : availableTools[0]) ||
+                '';
+
+              // Analysis command with smart default
               const analysisCommand = await input({
-                message: 'Analysis tool command (e.g., claude, gemini, opencode)',
-                default: existingConfig?.analysisCommand || '',
+                message:
+                  availableTools.length > 0
+                    ? 'Analysis tool command'
+                    : 'Analysis tool command (e.g., claude, gemini, opencode)',
+                default: defaultCommand,
               });
 
               // Analysis prompt file
