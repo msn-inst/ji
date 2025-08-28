@@ -6,8 +6,7 @@ import * as inquirer from '@inquirer/prompts';
 import { setup } from './setup.js';
 import { EnvironmentSaver } from '../../test/test-helpers.js';
 import { HttpResponse, http } from 'msw';
-import { server } from '../../test/mocks/server.js';
-import '../../test/setup-msw.js';
+import { server } from '../../test/setup-msw.js';
 
 describe('Setup Command', () => {
   let tempDir: string;
