@@ -75,7 +75,6 @@ describe('mine command helpers', () => {
         { key: 'D', priority: 'Medium', updated: '2024-01-04' },
       ];
 
-      // biome-ignore lint/suspicious/noExplicitAny: Mock data for testing
       const sortIssues = (issues: any[]) => {
         const getPriorityOrder = (priority: string): number => {
           const priorityMap: Record<string, number> = {
@@ -113,7 +112,6 @@ describe('mine command helpers', () => {
         { key: 'PROJ3-1', project_key: 'PROJ3', summary: 'Issue 1' },
       ];
 
-      // biome-ignore lint/suspicious/noExplicitAny: Mock data for testing
       const groupIssuesByProject = (issues: any[]) => {
         return issues.reduce(
           (acc, issue) => {
@@ -123,7 +121,6 @@ describe('mine command helpers', () => {
             acc[issue.project_key].push(issue);
             return acc;
           },
-          // biome-ignore lint/suspicious/noExplicitAny: Mock data for testing
           {} as Record<string, any[]>,
         );
       };

@@ -166,7 +166,7 @@ describe('ConfigManager Extended Tests', () => {
       await configManager.setConfig(authData);
 
       const configPath = join(tempDir, 'config.json');
-      const fs = require('fs');
+      const fs = require('node:fs');
       const stats = fs.statSync(configPath);
 
       // Check that file permissions are restrictive (owner read/write only)

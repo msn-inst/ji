@@ -111,7 +111,6 @@ describe('Background sync utilities', () => {
 describe('Content manager helpers', () => {
   describe('content building', () => {
     it('should build searchable content from Jira issue', () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Mock data for testing
       const buildContent = (issue: any): string => {
         const parts = [
           issue.key,
@@ -156,7 +155,6 @@ describe('Content manager helpers', () => {
 
   describe('metadata extraction', () => {
     it('should extract metadata from issues', () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Mock data for testing
       const extractMetadata = (issue: any) => {
         return {
           status: issue.fields.status?.name,

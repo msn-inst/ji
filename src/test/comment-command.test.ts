@@ -144,7 +144,6 @@ describe('Comment Command', () => {
     });
 
     it('should send comment as plain text body for wiki markup', async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Need to capture JSON body
       let capturedBody: any = null;
       installFetchMock(async (_url, init) => {
         capturedBody = JSON.parse(init?.body as string);
