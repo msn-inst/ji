@@ -2,146 +2,233 @@
 
 ## Overview
 
-The ji CLI test suite requires proper configuration mocking to run successfully in CI/CD and local test environments. Since the application expects a configuration file at `~/.ji/config.json` with sensitive credentials, tests need to mock this configuration.
+The ji CLI test suite uses multiple testing strategies to ensure reliability without requiring real Jira credentials:
 
-## Configuration Strategy
+1. **MSW (Mock Service Worker)** - Primary strategy for API mocking
+2. **Configuration mocking** - For tests that need config access
+3. **Effect testing utilities** - For testing Effect-based code
+4. **Real API testing** - Optional, controlled via environment variables
 
-### 1. Environment Variable Override
+## Testing Strategies
 
-Tests use the `JI_CONFIG_DIR` environment variable to override the default config directory:
+### 1. MSW-Based Testing (Primary)
+
+Most tests use Mock Service Worker to intercept and mock HTTP requests:
 
 ```typescript
-// In test setup
-process.env.JI_CONFIG_DIR = tempDir;
+import { server } from '../test/setup-msw';
+import { http, HttpResponse } from 'msw';
+
+// MSW automatically intercepts network requests
+// Defined in src/test/mocks/handlers.ts
 ```
 
-### 2. Temporary Directory Pattern
+### 2. Configuration Mocking
 
-Each test that requires configuration should:
-
-1. Create a temporary directory
-2. Set `JI_CONFIG_DIR` to that directory
-3. Create a mock `config.json` file
-4. Clean up after the test
-
-Example pattern:
+For tests that need configuration access:
 
 ```typescript
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { mockConfig } from '../test/test-helpers';
 
-let tempDir: string;
+// Use predefined mock configuration
+const config = mockConfig; // Contains safe test values
+```
 
-beforeEach(() => {
-  // Create temp directory
-  tempDir = mkdtempSync(join(tmpdir(), 'ji-test-'));
-  process.env.JI_CONFIG_DIR = tempDir;
-  
-  // Create mock config
-  const mockConfig = {
-    jiraUrl: 'https://test.atlassian.net',
-    email: 'test@example.com',
-    apiToken: 'test-token-123'
-  };
-  writeFileSync(
-    join(tempDir, 'config.json'), 
-    JSON.stringify(mockConfig), 
-    { mode: 0o600 }
+### 3. Effect Testing
+
+For testing Effect-based operations:
+
+```typescript
+import { Effect } from 'effect';
+import { TestContext } from '@effect/platform';
+
+test('Effect pipeline', async () => {
+  const result = await Effect.runPromise(
+    myEffect.pipe(
+      Effect.provide(TestLayer)
+    )
   );
-});
-
-afterEach(() => {
-  // Clean up
-  delete process.env.JI_CONFIG_DIR;
-  if (tempDir) {
-    rmSync(tempDir, { recursive: true, force: true });
-  }
+  expect(result).toBe(expectedValue);
 });
 ```
 
-### 3. Test Helpers
+### 4. Real API Testing (Optional)
 
-The `test-helpers.ts` file provides utilities for environment isolation:
+For integration tests against real Jira instances:
 
 ```typescript
-import { EnvironmentSaver } from '../test/test-helpers';
-
-const envSaver = new EnvironmentSaver();
-
-beforeEach(() => {
-  envSaver.save('JI_CONFIG_DIR');
-  // ... set up test environment
-});
-
-afterEach(() => {
-  envSaver.restore();
-});
+// Only runs when explicitly enabled
+if (process.env.ALLOW_REAL_API_CALLS === 'true') {
+  test('real API integration', async () => {
+    // Test against real Jira instance
+    // Requires actual credentials in ~/.ji/config.json
+  });
+}
 ```
 
-## CI/CD Configuration
+## Test File Organization
 
-For GitHub Actions or other CI/CD systems, no special configuration is needed. Tests will:
+Tests are organized in `src/test/` directory:
 
-1. Create their own temporary directories
-2. Mock all necessary configuration
-3. Clean up after themselves
+```
+src/test/
+├── *.test.ts              # Individual test files
+├── mocks/                 # MSW mock definitions
+│   ├── handlers.ts        # Request handlers
+│   └── server.ts          # Server setup
+├── setup-msw.ts           # MSW configuration
+├── test-helpers.ts        # Testing utilities
+└── msw-schema-validation.ts # Schema validation for mocks
+```
 
-## Mock API Responses
+## MSW Handler Configuration
 
-Tests should mock API responses instead of making real calls:
+API mocks are defined in `src/test/mocks/handlers.ts`:
 
 ```typescript
-import { installFetchMock } from './test-fetch-mock';
+import { http, HttpResponse } from 'msw';
 
-installFetchMock(async (url, init) => {
-  const urlString = url.toString();
-  
-  if (urlString.includes('/rest/api/3/myself')) {
-    return new Response(JSON.stringify({
-      accountId: 'test-user',
+export const handlers = [
+  // Jira user endpoint
+  http.get('*/rest/api/3/myself', () => {
+    return HttpResponse.json({
+      accountId: 'test-account-id',
       displayName: 'Test User',
       emailAddress: 'test@example.com'
-    }), { status: 200 });
-  }
+    });
+  }),
   
-  // Add other mock responses as needed
-});
+  // Jira search endpoint
+  http.get('*/rest/api/3/search', () => {
+    return HttpResponse.json({
+      issues: [],
+      startAt: 0,
+      maxResults: 50,
+      total: 0
+    });
+  })
+];
 ```
 
-## Best Practices
+## Schema Validation in Tests
 
-1. **Never use real credentials in tests** - Always use mock/fake credentials
-2. **Clean up after tests** - Remove temporary directories and restore environment
-3. **Mock external services** - Use fetch mocks for Jira API, Confluence API, etc.
-4. **Use `ALLOW_REAL_API_CALLS` sparingly** - Only when testing actual integration
-5. **Isolate test environments** - Each test should have its own config directory
+Mock responses are validated against Effect schemas to ensure type safety:
+
+```typescript
+import { validateAndReturn } from '../msw-schema-validation';
+import { UserSchema } from '../../lib/effects/jira/schemas';
+
+// Mock handler with schema validation
+http.get('*/rest/api/3/myself', () => {
+  const user = createValidUser({
+    accountId: 'test-account-id',
+    displayName: 'Test User',
+    emailAddress: 'test@example.com'
+  });
+  
+  return HttpResponse.json(
+    validateAndReturn(UserSchema, user, 'Current User')
+  );
+});
+```
 
 ## Running Tests
 
 ### Local Development
 ```bash
-bun test                    # Run all tests
-bun test:coverage          # Run with coverage
-bun test <file>            # Run specific test file
+# Run all tests with MSW mocking (default)
+NODE_ENV=test bun test
+
+# Run with coverage
+bun run test:coverage
+
+# Run specific test file
+bun test src/test/mine-command-simple.test.ts
+
+# Run tests with real API calls (use sparingly)
+ALLOW_REAL_API_CALLS=true NODE_ENV=test bun test
+
+# Run with coverage thresholds
+bun run test:coverage:check
 ```
 
 ### CI/CD
-Tests run automatically on push/PR with:
+GitHub Actions automatically run:
 ```bash
-bun test:coverage:check    # Enforces coverage thresholds
+NODE_ENV=test bun run test:coverage:check
 ```
+
+No special CI configuration needed - MSW handles all mocking automatically.
+
+## Best Practices
+
+1. **Use MSW for HTTP mocking** - Primary testing strategy
+2. **Validate mock responses** - Use Effect schemas to ensure type safety
+3. **Avoid real API calls** - Only use `ALLOW_REAL_API_CALLS` when necessary
+4. **Test Effect pipelines** - Use Effect testing utilities for proper error handling
+5. **Isolate tests** - Each test should be independent
+6. **Use schema validation** - Ensure mocks match real API responses
 
 ## Troubleshooting
 
-### "No configuration found" Error
-- Ensure test properly mocks config directory and file
-- Check that `JI_CONFIG_DIR` is set before importing commands
+### MSW Not Intercepting Requests
+- Ensure `setup-msw.ts` is imported in test files
+- Check that handlers match the request URL pattern
+- Verify MSW is configured with `onUnhandledRequest: 'error'`
 
-### Permission Errors
-- Mock config files should be created with mode `0o600`
-- Some CI environments may have different permission handling
+### Schema Validation Failures
+- Check that mock data matches the Effect schema definitions
+- Use `validateAndReturn` helper for consistent validation
+- Review schema definitions in `src/lib/effects/jira/schemas.ts`
 
-### Cleanup Issues
-- Always use try/finally or afterEach hooks for cleanup
-- Use `{ force: true }` when removing directories
+### Real API Test Issues
+- Ensure `~/.ji/config.json` exists with valid credentials
+- Set `ALLOW_REAL_API_CALLS=true` environment variable
+- Use sparingly to avoid rate limiting and test instability
+
+### Effect Testing Issues
+- Provide proper test layers using `Effect.provide(TestLayer)`
+- Use `Effect.runPromise` for async Effect operations
+- Handle errors with appropriate Effect error handling patterns
+
+## Examples
+
+### Basic MSW Test
+```typescript
+import { test, expect } from 'bun:test';
+import { server } from './setup-msw';
+import { http, HttpResponse } from 'msw';
+
+test('should handle API response', async () => {
+  // Override default handler for this test
+  server.use(
+    http.get('*/rest/api/3/search', () => {
+      return HttpResponse.json({
+        issues: [{ key: 'TEST-123', fields: { summary: 'Test Issue' } }],
+        total: 1
+      });
+    })
+  );
+
+  // Test your command that makes API calls
+  const result = await runCommand();
+  expect(result).toContain('TEST-123');
+});
+```
+
+### Effect Testing Example
+```typescript
+import { test, expect } from 'bun:test';
+import { Effect } from 'effect';
+import { fetchIssue } from '../cli/commands/issue';
+
+test('should handle Effect pipeline', async () => {
+  const result = await Effect.runPromise(
+    fetchIssue('TEST-123').pipe(
+      Effect.provide(MockJiraLayer)
+    )
+  );
+  
+  expect(result.key).toBe('TEST-123');
+});
+```

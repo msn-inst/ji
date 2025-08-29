@@ -444,6 +444,13 @@ bun upgrade
 
 # Clear Bun cache
 rm -rf ~/.bun/install/cache
+
+# Check Bun version (should be 1.2.0+)
+bun --version
+
+# Reinstall dependencies
+rm -rf node_modules bun.lockb
+bun install
 ```
 
 ### Debug Mode
@@ -476,8 +483,9 @@ EFFECT_LOG_LEVEL=Debug bun run src/cli.ts mine
 - [Bun Documentation](https://bun.sh/docs)
 - [Jira REST API](https://developer.atlassian.com/cloud/jira/platform/rest/v3/)
 - [Conventional Commits](https://www.conventionalcommits.org/)
-- [Project Documentation](./docs/DOCS.md)
-- [Architecture Notes](./CLAUDE.md)
+- [Agent Instructions](./AGENTS.md)
+- [Test Environment Setup](./TEST_ENVIRONMENT.md)
+- [Command Specifications](./specs/)
 
 ## License
 
