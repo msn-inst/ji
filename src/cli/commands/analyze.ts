@@ -270,8 +270,8 @@ const loadPrompt = (promptPath?: string): Effect.Effect<string, ConfigurationErr
       });
     }
 
-    // Check config for default prompt
-    const config = yield* Effect.tryPromise<Config | null, null>({
+    // Check config for default prompt (removed analysisPrompt support)
+    yield* Effect.tryPromise<Config | null, null>({
       try: async () => {
         const configManager = new ConfigManager();
         try {
@@ -282,22 +282,6 @@ const loadPrompt = (promptPath?: string): Effect.Effect<string, ConfigurationErr
       },
       catch: () => null,
     });
-
-    if (config?.analysisPrompt) {
-      const promptPath = config.analysisPrompt;
-      const expandedPath = expandTilde(promptPath);
-      if (!existsSync(expandedPath)) {
-        return yield* Effect.fail(
-          new ConfigurationError(
-            `Configured analysis prompt file not found: ${promptPath}\nPlease run "ji setup" to update the configuration.`,
-          ),
-        );
-      }
-      return yield* Effect.try({
-        try: () => readFileSync(expandedPath, 'utf-8'),
-        catch: (error) => new ConfigurationError(`Failed to read config prompt: ${error}`),
-      });
-    }
 
     // Use default prompt
     const defaultPromptPath = join(import.meta.dir, '../../assets/default-analysis-prompt.md');

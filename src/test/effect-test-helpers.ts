@@ -212,7 +212,6 @@ interface TestConfig {
   email: string;
   apiToken: string;
   analysisCommand?: string;
-  analysisPrompt?: string;
 }
 
 export class ConfigBuilder {
@@ -239,11 +238,6 @@ export class ConfigBuilder {
 
   withAnalysisCommand(command: string): this {
     this.config.analysisCommand = command;
-    return this;
-  }
-
-  withAnalysisPrompt(prompt: string): this {
-    this.config.analysisPrompt = prompt;
     return this;
   }
 
