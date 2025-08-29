@@ -24,7 +24,6 @@ const ConfigSchema = Schema.Struct({
   jiraUrl: Schema.String.pipe(Schema.pattern(/^https?:\/\/.+/)), // URL validation
   email: Schema.String.pipe(Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)), // Email validation
   apiToken: Schema.String.pipe(Schema.minLength(1)),
-  analysisPrompt: Schema.optional(Schema.String), // Path to analysis prompt file
   analysisCommand: Schema.optional(Schema.String), // Command for analysis tool (e.g., "claude -p")
   defaultProject: Schema.optional(Schema.String), // Default project key (e.g., "PROJ")
 });
