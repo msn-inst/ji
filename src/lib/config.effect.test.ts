@@ -31,7 +31,6 @@ describe('ConfigManager Effect-based Tests', () => {
         email: 'test@example.com',
         apiToken: 'test-token-123',
         analysisCommand: 'claude',
-        analysisPrompt: '/path/to/prompt.md',
       };
 
       await configManager.setConfig(validConfig);
@@ -165,7 +164,6 @@ describe('ConfigManager Effect-based Tests', () => {
         expect(result.value.email).toBe('minimal@example.com');
         expect(result.value.apiToken).toBe('minimal-token');
         expect(result.value.analysisCommand).toBeUndefined();
-        expect(result.value.analysisPrompt).toBeUndefined();
       }
     });
   });

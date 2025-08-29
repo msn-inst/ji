@@ -1,6 +1,3 @@
-import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import chalk from 'chalk';
 import { input, password } from '@inquirer/prompts';
@@ -43,7 +40,6 @@ const saveConfig = (config: {
   jiraUrl: string;
   email: string;
   apiToken: string;
-  analysisPrompt?: string;
   analysisCommand?: string;
   defaultProject?: string;
 }) =>
@@ -59,14 +55,6 @@ const saveConfig = (config: {
     },
     catch: (error) => new Error(`Failed to save configuration: ${error}`),
   });
-
-// Helper to expand tilde in file paths
-const expandTilde = (path: string): string => {
-  if (path.startsWith('~/')) {
-    return resolve(homedir(), path.slice(2));
-  }
-  return path;
-};
 
 // Check if a command exists on the system
 const checkCommandExists = (command: string): Promise<boolean> =>
@@ -100,20 +88,6 @@ const detectAvailableAITools = () =>
     },
     catch: (error) => new Error(`Failed to detect AI tools: ${error}`),
   });
-
-// Validate analysis prompt file path
-const validateAnalysisPromptFile = (path: string): string | undefined => {
-  if (!path) {
-    return undefined;
-  }
-
-  const expandedPath = expandTilde(path);
-  if (existsSync(expandedPath)) {
-    return path;
-  }
-
-  return undefined;
-};
 
 // Effect wrapper for getting existing config
 const getExistingConfig = () =>
@@ -197,37 +171,11 @@ const setupEffect = () =>
                 default: defaultCommand,
               });
 
-              // Analysis prompt file
-              let analysisPrompt = await input({
-                message: 'Path to custom analysis prompt file (optional)',
-                default: existingConfig?.analysisPrompt || '',
-              });
-
-              // Validate the prompt file if provided
-              if (analysisPrompt) {
-                const validated = validateAnalysisPromptFile(analysisPrompt);
-                if (!validated) {
-                  console.log(chalk.red(`File not found: ${analysisPrompt}`));
-                  analysisPrompt = await input({
-                    message: 'Enter a valid path or press Enter to skip',
-                    default: '',
-                  });
-                  if (analysisPrompt) {
-                    const secondValidation = validateAnalysisPromptFile(analysisPrompt);
-                    if (!secondValidation) {
-                      console.log(chalk.yellow('Skipping custom prompt file'));
-                      analysisPrompt = '';
-                    }
-                  }
-                }
-              }
-
               return {
                 jiraUrl: jiraUrl.endsWith('/') ? jiraUrl.slice(0, -1) : jiraUrl,
                 email,
                 apiToken,
                 ...(analysisCommand && { analysisCommand }),
-                ...(analysisPrompt && { analysisPrompt }),
                 ...(defaultProject && { defaultProject }),
               };
             },

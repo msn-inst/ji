@@ -22,7 +22,6 @@ const TestConfigSchema = Schema.Struct({
   jiraUrl: Schema.String,
   email: Schema.String,
   apiToken: Schema.String,
-  analysisPrompt: Schema.optional(Schema.String),
   analysisCommand: Schema.optional(Schema.String),
 });
 
@@ -47,7 +46,6 @@ const createMockConfig = (overrides?: Partial<Config>): Config => {
     jiraUrl: 'https://test.atlassian.net',
     email: 'test@example.com',
     apiToken: 'test-token',
-    analysisPrompt: '/path/to/prompt.md',
     analysisCommand: 'claude -p',
     ...overrides,
   };
@@ -640,8 +638,8 @@ describe.skip('Analyze Command with Effect and MSW', () => {
         }),
       }));
 
-      // Remove analysisPrompt from config
-      mockConfig = createMockConfig({ analysisPrompt: undefined });
+      // Remove analysisCommand from config
+      mockConfig = createMockConfig({ analysisCommand: undefined });
 
       installFetchMock(createMockApiHandler());
       mockToolExecution('<response>Test</response>');

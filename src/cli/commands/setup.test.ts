@@ -70,7 +70,6 @@ describe('Setup Command', () => {
       passwordSpy.mockResolvedValueOnce('test-token-123'); // API Token
       inputSpy.mockResolvedValueOnce('PROJ'); // Default project
       inputSpy.mockResolvedValueOnce('claude'); // Analysis command
-      inputSpy.mockResolvedValueOnce(''); // Analysis prompt file
 
       // Mock successful API response using MSW
       server.use(
@@ -97,7 +96,7 @@ describe('Setup Command', () => {
       expect(savedConfig.defaultProject).toBe('PROJ');
 
       // Verify prompts were called
-      expect(inputSpy).toHaveBeenCalledTimes(5);
+      expect(inputSpy).toHaveBeenCalledTimes(4);
       expect(passwordSpy).toHaveBeenCalledTimes(1);
 
       // Verify no error exit
@@ -110,7 +109,6 @@ describe('Setup Command', () => {
       passwordSpy.mockResolvedValueOnce('minimal-token');
       inputSpy.mockResolvedValueOnce(''); // No default project
       inputSpy.mockResolvedValueOnce(''); // No analysis command
-      inputSpy.mockResolvedValueOnce(''); // No analysis prompt
 
       // Mock successful API response using MSW
       server.use(
@@ -132,7 +130,6 @@ describe('Setup Command', () => {
       expect(savedConfig.email).toBe('minimal@example.com');
       expect(savedConfig.apiToken).toBe('minimal-token');
       expect(savedConfig.analysisCommand).toBeUndefined();
-      expect(savedConfig.analysisPrompt).toBeUndefined();
 
       expect(processExitSpy).not.toHaveBeenCalled();
     });
@@ -150,7 +147,6 @@ describe('Setup Command', () => {
         email: 'existing@example.com',
         apiToken: 'existing-token',
         analysisCommand: 'gemini',
-        analysisPrompt: '~/prompts/custom.md',
       };
 
       writeFileSync(join(jiDir, 'config.json'), JSON.stringify(existingConfig), { mode: 0o600 });
@@ -163,8 +159,6 @@ describe('Setup Command', () => {
       passwordSpy.mockResolvedValueOnce(''); // Empty means keep existing
       inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('gemini');
-      inputSpy.mockResolvedValueOnce('~/prompts/custom.md');
-      inputSpy.mockResolvedValueOnce(''); // Retry prompt for invalid file
 
       // Mock successful API response using MSW
       server.use(
@@ -186,8 +180,6 @@ describe('Setup Command', () => {
       expect(savedConfig.email).toBe('existing@example.com');
       expect(savedConfig.apiToken).toBe('existing-token'); // Kept existing
       expect(savedConfig.analysisCommand).toBe('gemini');
-      // analysisPrompt will be undefined since ~/prompts/custom.md doesn't exist
-      expect(savedConfig.analysisPrompt).toBeUndefined();
 
       expect(processExitSpy).not.toHaveBeenCalled();
     });
@@ -198,7 +190,6 @@ describe('Setup Command', () => {
       passwordSpy.mockResolvedValueOnce('updated-token');
       inputSpy.mockResolvedValueOnce('NEWPROJ'); // Default project
       inputSpy.mockResolvedValueOnce('opencode');
-      inputSpy.mockResolvedValueOnce('');
 
       // Mock successful API response using MSW
       server.use(
@@ -220,7 +211,6 @@ describe('Setup Command', () => {
       expect(savedConfig.email).toBe('updated@example.com');
       expect(savedConfig.apiToken).toBe('updated-token');
       expect(savedConfig.analysisCommand).toBe('opencode');
-      expect(savedConfig.analysisPrompt).toBeUndefined(); // Cleared
       expect(savedConfig.defaultProject).toBe('NEWPROJ');
 
       expect(processExitSpy).not.toHaveBeenCalled();
@@ -233,7 +223,6 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('test@example.com');
       passwordSpy.mockResolvedValueOnce('invalid-token');
       inputSpy.mockResolvedValueOnce(''); // Default project
-      inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
       // Mock 401 response using MSW
@@ -255,7 +244,6 @@ describe('Setup Command', () => {
       passwordSpy.mockResolvedValueOnce('test-token');
       inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('');
-      inputSpy.mockResolvedValueOnce('');
 
       // Mock network error using MSW
       server.use(
@@ -276,7 +264,6 @@ describe('Setup Command', () => {
       passwordSpy.mockResolvedValueOnce('test-token');
       inputSpy.mockResolvedValueOnce(''); // Default project
       inputSpy.mockResolvedValueOnce('');
-      inputSpy.mockResolvedValueOnce('');
 
       // Mock 500 error using MSW
       server.use(
@@ -289,104 +276,6 @@ describe('Setup Command', () => {
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
       expect(consoleErrorSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('Analysis Prompt File Validation', () => {
-    it('should accept valid file path', async () => {
-      // Create a test prompt file
-      const promptFile = join(tempDir, 'test-prompt.md');
-      writeFileSync(promptFile, '# Test Prompt');
-
-      inputSpy.mockResolvedValueOnce('https://test.atlassian.net');
-      inputSpy.mockResolvedValueOnce('test@example.com');
-      passwordSpy.mockResolvedValueOnce('test-token');
-      inputSpy.mockResolvedValueOnce(''); // Default project
-      inputSpy.mockResolvedValueOnce('claude');
-      inputSpy.mockResolvedValueOnce(promptFile);
-
-      // Mock successful API response using MSW
-      server.use(
-        http.get('*/rest/api/3/myself', () => {
-          return HttpResponse.json({
-            displayName: 'Test User',
-            emailAddress: 'test@example.com',
-            accountId: 'test-account',
-          });
-        }),
-      );
-
-      await setup();
-
-      const configPath = join(tempDir, '.ji', 'config.json');
-      const savedConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
-
-      expect(savedConfig.analysisPrompt).toBe(promptFile);
-      expect(processExitSpy).not.toHaveBeenCalled();
-    });
-
-    it('should handle invalid file path', async () => {
-      inputSpy.mockResolvedValueOnce('https://test.atlassian.net');
-      inputSpy.mockResolvedValueOnce('test@example.com');
-      passwordSpy.mockResolvedValueOnce('test-token');
-      inputSpy.mockResolvedValueOnce(''); // Default project
-      inputSpy.mockResolvedValueOnce('claude');
-      inputSpy.mockResolvedValueOnce('/nonexistent/file.md'); // Invalid path
-      inputSpy.mockResolvedValueOnce(''); // Skip on retry
-
-      // Mock successful API response using MSW
-      server.use(
-        http.get('*/rest/api/3/myself', () => {
-          return HttpResponse.json({
-            displayName: 'Test User',
-            emailAddress: 'test@example.com',
-            accountId: 'test-account',
-          });
-        }),
-      );
-
-      await setup();
-
-      const configPath = join(tempDir, '.ji', 'config.json');
-      const savedConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
-
-      expect(savedConfig.analysisPrompt).toBeUndefined();
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('File not found'));
-      expect(processExitSpy).not.toHaveBeenCalled();
-    });
-
-    it('should expand tilde in file paths', async () => {
-      // Create a prompt file in the fake home directory
-      const promptFile = join(tempDir, 'prompt.md');
-      writeFileSync(promptFile, '# Home Prompt');
-
-      inputSpy.mockResolvedValueOnce('https://test.atlassian.net');
-      inputSpy.mockResolvedValueOnce('test@example.com');
-      passwordSpy.mockResolvedValueOnce('test-token');
-      inputSpy.mockResolvedValueOnce(''); // Default project
-      inputSpy.mockResolvedValueOnce('claude');
-      inputSpy.mockResolvedValueOnce('~/prompt.md'); // Using tilde
-      inputSpy.mockResolvedValueOnce(''); // Retry prompt if file not found
-
-      // Mock successful API response using MSW
-      server.use(
-        http.get('*/rest/api/3/myself', () => {
-          return HttpResponse.json({
-            displayName: 'Test User',
-            emailAddress: 'test@example.com',
-            accountId: 'test-account',
-          });
-        }),
-      );
-
-      await setup();
-
-      const configPath = join(tempDir, '.ji', 'config.json');
-      const savedConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
-
-      // If validation failed, the prompt should be undefined
-      expect(savedConfig.analysisPrompt).toBeUndefined();
-      expect(processExitSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -408,7 +297,6 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('test@example.com');
       passwordSpy.mockResolvedValueOnce('test-token');
       inputSpy.mockResolvedValueOnce(''); // Default project
-      inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
       // Mock successful API response using MSW
@@ -442,7 +330,6 @@ describe('Setup Command', () => {
       inputSpy.mockResolvedValueOnce('test@example.com');
       passwordSpy.mockResolvedValueOnce('test-token');
       inputSpy.mockResolvedValueOnce(''); // Default project
-      inputSpy.mockResolvedValueOnce('');
       inputSpy.mockResolvedValueOnce('');
 
       // Mock successful API response using MSW
