@@ -268,7 +268,7 @@ describe.skip('Analyze Command with Effect and MSW', () => {
             stdout: {
               on: mock((event: string, cb: (data: Buffer) => void) => {
                 if (event === 'data') {
-                  cb(Buffer.from('<response>Analysis result from AI</response>'));
+                  cb(Buffer.from('<ji-response>Analysis result from AI</ji-response>'));
                 }
               }),
             },
@@ -329,7 +329,7 @@ describe.skip('Analyze Command with Effect and MSW', () => {
           }
 
           // Mock for actual tool execution
-          return createMockToolProcess('<response>Test</response>');
+          return createMockToolProcess('<ji-response>Test</ji-response>');
         }),
       }));
 
@@ -388,7 +388,7 @@ describe.skip('Analyze Command with Effect and MSW', () => {
       }));
 
       installFetchMock(createMockApiHandler());
-      mockToolExecution('<response>Test</response>');
+      mockToolExecution('<ji-response>Test</ji-response>');
 
       await analyzeIssue('TEST-123', { yes: true });
 
@@ -410,7 +410,7 @@ describe.skip('Analyze Command with Effect and MSW', () => {
       }));
 
       installFetchMock(createMockApiHandler());
-      mockToolExecution('<response>Test comment</response>');
+      mockToolExecution('<ji-response>Test comment</ji-response>');
 
       // Use comment flag but not yes flag to trigger confirmation
       await analyzeIssue('TEST-123', { comment: true, yes: false });
@@ -499,7 +499,7 @@ describe.skip('Analyze Command with Effect and MSW', () => {
         return new Response('Not found', { status: 404 });
       });
 
-      mockToolExecution('<response>Analysis</response>', (input: string) => {
+      mockToolExecution('<ji-response>Analysis</ji-response>', (input: string) => {
         // Verify XML was properly formatted
         expect(input).toContain('<issue>');
         expect(input).toContain('<key>TEST-123</key>');
@@ -537,7 +537,7 @@ describe.skip('Analyze Command with Effect and MSW', () => {
         return new Response('Not found', { status: 404 });
       });
 
-      mockToolExecution('<response>Analysis without comments</response>');
+      mockToolExecution('<ji-response>Analysis without comments</ji-response>');
 
       // Should succeed despite comment failure
       await analyzeIssue('TEST-123', { comment: true, yes: true });
@@ -580,7 +580,7 @@ describe.skip('Analyze Command with Effect and MSW', () => {
         return new Response(JSON.stringify({}), { status: 200 });
       });
 
-      mockToolExecution('<response>Test</response>', (input: string) => {
+      mockToolExecution('<ji-response>Test</ji-response>', (input: string) => {
         capturedXml = input;
       });
 
@@ -611,7 +611,7 @@ describe.skip('Analyze Command with Effect and MSW', () => {
       }));
 
       installFetchMock(createMockApiHandler());
-      mockToolExecution('<response>Test</response>');
+      mockToolExecution('<ji-response>Test</ji-response>');
 
       await analyzeIssue('TEST-123', {
         prompt: '/custom/prompt.md',
@@ -642,7 +642,7 @@ describe.skip('Analyze Command with Effect and MSW', () => {
       mockConfig = createMockConfig({ analysisCommand: undefined });
 
       installFetchMock(createMockApiHandler());
-      mockToolExecution('<response>Test</response>');
+      mockToolExecution('<ji-response>Test</ji-response>');
 
       await analyzeIssue('TEST-123', { yes: true });
 

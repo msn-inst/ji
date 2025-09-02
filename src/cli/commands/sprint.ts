@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { Console, Effect, pipe } from 'effect';
 import { ConfigManager } from '../../lib/config.js';
 import { JiraClient } from '../../lib/jira-client.js';
 
@@ -25,87 +26,121 @@ interface SprintIssue {
   projectKey: string;
 }
 
-export async function showSprint(projectFilter?: string, options: { unassigned?: boolean; xml?: boolean } = {}) {
-  const configManager = new ConfigManager();
-
-  try {
-    const config = await configManager.getConfig();
-
-    if (!config) {
-      console.error('No configuration found. Please run "ji setup" first.');
-      process.exit(1);
-    }
-
-    // Always fetch fresh data from API
-    const jiraClient = new JiraClient(config);
-
-    // Get active sprints
-    const boards = await jiraClient.getBoards();
-    const activeSprintIssues: SprintIssue[] = [];
-
-    // Use default project if no filter specified
-    const effectiveProject = projectFilter || config.defaultProject;
-
-    // Filter boards by project if specified
-    const filteredBoards = effectiveProject
-      ? boards.filter((board) => board.location?.projectKey?.toUpperCase() === effectiveProject.toUpperCase())
-      : boards;
-
-    if (filteredBoards.length === 0) {
-      const message = effectiveProject
-        ? `No boards found for project ${effectiveProject.toUpperCase()}`
-        : 'No boards found';
-      console.log(message);
-      return;
-    }
-
-    // Get issues from active sprints
-    for (const board of filteredBoards) {
+// Effect wrapper for getting configuration and jira client
+const getConfigEffect = () =>
+  Effect.tryPromise({
+    try: async () => {
+      const configManager = new ConfigManager();
       try {
-        const activeSprints = await jiraClient.getActiveSprints(board.id);
-
-        for (const sprint of activeSprints) {
-          const sprintResult = await jiraClient.getSprintIssues(sprint.id);
-          const sprintIssues = sprintResult.issues;
-
-          // Filter by assignment if requested
-          const filteredIssues = options.unassigned
-            ? sprintIssues.filter((issue) => !issue.fields.assignee)
-            : sprintIssues;
-
-          activeSprintIssues.push(
-            ...filteredIssues.map((issue) => ({
-              key: issue.key,
-              fields: issue.fields,
-              sprintName: sprint.name,
-              boardName: board.name,
-              projectKey: board.location?.projectKey || issue.key.split('-')[0],
-            })),
-          );
+        const config = await configManager.getConfig();
+        if (!config) {
+          throw new Error('No configuration found. Please run "ji setup" first.');
         }
+        const jiraClient = new JiraClient(config);
+        return { config, configManager, jiraClient };
       } catch (error) {
-        // Continue with other boards if one fails
-        console.error(`Failed to get sprint data for board ${board.name}: ${error}`);
+        configManager.close();
+        throw error;
       }
-    }
+    },
+    catch: (error) => new Error(`Failed to get configuration: ${error}`),
+  });
 
-    if (activeSprintIssues.length === 0) {
-      const message = options.unassigned ? 'No unassigned issues in active sprints' : 'No issues in active sprints';
-      console.log(message);
-      return;
-    }
+// Effect for fetching sprint issues
+const getSprintIssuesEffect = (jiraClient: JiraClient, projectFilter?: string, unassigned?: boolean) =>
+  Effect.tryPromise({
+    try: async () => {
+      const boards = await jiraClient.getBoards();
+      const activeSprintIssues: SprintIssue[] = [];
 
-    // Display results
-    if (!options.xml) {
-      displayPrettySprintResults(activeSprintIssues, options.unassigned);
-    } else {
-      displayXMLSprintResults(activeSprintIssues, options.unassigned);
-    }
-  } catch (error) {
-    console.error(`Error fetching sprint data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Use project filter or get all boards
+      const effectiveProject = projectFilter;
+      const filteredBoards = effectiveProject
+        ? boards.filter((board) => board.location?.projectKey?.toUpperCase() === effectiveProject.toUpperCase())
+        : boards;
+
+      if (filteredBoards.length === 0) {
+        return { issues: [], effectiveProject };
+      }
+
+      // Get issues from active sprints
+      for (const board of filteredBoards) {
+        try {
+          const activeSprints = await jiraClient.getActiveSprints(board.id);
+
+          for (const sprint of activeSprints) {
+            const sprintResult = await jiraClient.getSprintIssues(sprint.id);
+            const sprintIssues = sprintResult.issues;
+
+            // Filter by assignment if requested
+            const filteredIssues = unassigned ? sprintIssues.filter((issue) => !issue.fields.assignee) : sprintIssues;
+
+            activeSprintIssues.push(
+              ...filteredIssues.map((issue) => ({
+                key: issue.key,
+                fields: issue.fields,
+                sprintName: sprint.name,
+                boardName: board.name,
+                projectKey: board.location?.projectKey || issue.key.split('-')[0],
+              })),
+            );
+          }
+        } catch (error) {
+          // Continue with other boards if one fails
+          console.error(`Failed to get sprint data for board ${board.name}: ${error}`);
+        }
+      }
+
+      return { issues: activeSprintIssues, effectiveProject };
+    },
+    catch: (error) => new Error(`Failed to fetch sprint issues: ${error}`),
+  });
+
+// Main Effect for showing sprints
+const showSprintEffect = (projectFilter?: string, options: { unassigned?: boolean; xml?: boolean } = {}) =>
+  pipe(
+    getConfigEffect(),
+    Effect.flatMap(({ config, configManager, jiraClient }) =>
+      pipe(
+        getSprintIssuesEffect(jiraClient, projectFilter || config.defaultProject, options.unassigned),
+        Effect.flatMap(({ issues, effectiveProject }) => {
+          if (issues.length === 0) {
+            const message = effectiveProject
+              ? effectiveProject
+                ? `No boards found for project ${effectiveProject.toUpperCase()}`
+                : 'No boards found'
+              : options.unassigned
+                ? 'No unassigned issues in active sprints'
+                : 'No issues in active sprints';
+
+            return Effect.sync(() => console.log(message));
+          }
+
+          // Display results
+          return Effect.sync(() => {
+            if (!options.xml) {
+              displayPrettySprintResults(issues, options.unassigned);
+            } else {
+              displayXMLSprintResults(issues, options.unassigned);
+            }
+          });
+        }),
+        Effect.tap(() => Effect.sync(() => configManager.close())),
+      ),
+    ),
+    Effect.catchAll((error) =>
+      pipe(
+        Console.error('Error fetching sprint data:', error.message),
+        Effect.flatMap(() => Effect.fail(error)),
+      ),
+    ),
+  );
+
+export async function showSprint(projectFilter?: string, options: { unassigned?: boolean; xml?: boolean } = {}) {
+  try {
+    await Effect.runPromise(showSprintEffect(projectFilter, options));
+  } catch (_error) {
     process.exit(1);
-  } finally {
-    configManager.close();
   }
 }
 

@@ -62,11 +62,11 @@ h4. Next steps
 * [immediate action 1]
 * [immediate action 2]
 
-Output your response in a <response></response> tag. Remember, the contents of this response (inside the <response></response> tags) should start with :robot: with named tool.
+Output your response in an opening <ji-response> and closing </ji-response> tag. Remember, the contents of this response (inside the <ji-response> tags) should start with :robot: with named tool.
 
 ## Example
 
-<response>
+<ji-response>
 :robot: Gemini (Gemini 2.5 Flash)
 [the body of the response]
-</response>
+</ji-response>

@@ -345,20 +345,138 @@ const executeTool = (toolCommand: string, input: string): Effect.Effect<string, 
 // ============= Response Extraction =============
 const extractResponse = (output: string): Effect.Effect<string, ResponseExtractionError> =>
   Effect.gen(function* () {
-    const responseMatch = output.match(/<response>([\s\S]*?)<\/response>/);
-    if (!responseMatch || !responseMatch[1]) {
-      // Check if output contains response-like content but without tags
-      const hasContent = output.trim().length > 50;
-      const errorMsg = hasContent
-        ? 'Tool output does not contain <response> tags. The analysis tool must wrap its response in <response> tags.'
-        : 'No response received from analysis tool';
-      return yield* Effect.fail(new ResponseExtractionError(errorMsg, output));
+    // Try multiple regex patterns for flexibility
+    const patterns = [
+      /<ji-response>([\s\S]*?)<\/ji-response>/i, // Standard case-insensitive
+      /<ji-response[^>]*>([\s\S]*?)<\/ji-response>/i, // With attributes
+      /<JI-Response>([\s\S]*?)<\/JI-Response>/, // Title case
+      /<JI-RESPONSE>([\s\S]*?)<\/JI-RESPONSE>/, // All caps
+    ];
+
+    for (const pattern of patterns) {
+      const match = output.match(pattern);
+      if (match?.[1]) {
+        const response = match[1].trim();
+        if (response) {
+          return response;
+        }
+        // Empty response tags
+        return yield* Effect.fail(new ResponseExtractionError('Empty response in tags', output));
+      }
     }
-    const response = responseMatch[1].trim();
-    if (!response) {
-      return yield* Effect.fail(new ResponseExtractionError('Empty response in <response> tags', output));
+
+    // Debug: Let's see if we can find any ji-response tags at all
+    const hasAnyResponseTag = /<\/?ji-response[^>]*>/i.test(output);
+    if (hasAnyResponseTag && process.env.DEBUG) {
+      console.log('DEBUG: Found ji-response tags in output, but regex failed to match content');
+      console.log('DEBUG: All ji-response tag occurrences:', output.match(/<\/?ji-response[^>]*>/gi));
     }
-    return response;
+
+    // No response tags found - provide detailed debugging info
+    const trimmed = output.trim();
+    if (trimmed.length === 0) {
+      return yield* Effect.fail(new ResponseExtractionError('No output received from analysis tool', output));
+    }
+
+    // Build detailed error message with debugging info
+    const lines = trimmed.split('\n');
+    const totalLines = lines.length;
+    const outputLength = trimmed.length;
+
+    // Find where ji-response tags appear in the text
+    const openTagLine = lines.findIndex((line) => /<ji-response[^>]*>/i.test(line));
+    const closeTagLine = lines.findIndex((line) => /<\/ji-response>/i.test(line));
+
+    let debugInfo = `Tool output does not contain <ji-response> tags. The analysis tool must wrap its response in <ji-response> tags.
+
+Debugging Information:
+- Output length: ${outputLength} characters
+- Total lines: ${totalLines}`;
+
+    // Show context around where tags appear or should appear
+    if (openTagLine >= 0) {
+      const contextStart = Math.max(0, openTagLine - 2);
+      const contextEnd = Math.min(lines.length, openTagLine + 3);
+      debugInfo += `
+- Opening tag found at line ${openTagLine + 1}, context:
+${lines.slice(contextStart, contextEnd).join('\n')}`;
+    } else {
+      debugInfo += `
+- First 5 lines:
+${lines.slice(0, 5).join('\n')}`;
+    }
+
+    if (closeTagLine >= 0 && closeTagLine !== openTagLine) {
+      const contextStart = Math.max(0, closeTagLine - 2);
+      const contextEnd = Math.min(lines.length, closeTagLine + 3);
+      debugInfo += `
+- Closing tag found at line ${closeTagLine + 1}, context:
+${lines.slice(contextStart, contextEnd).join('\n')}`;
+    } else if (lines.length > 5) {
+      debugInfo += `
+- Last 3 lines:
+${lines.slice(-3).join('\n')}`;
+    }
+
+    // Check for common issues with more detailed analysis
+    const hasResponseWord = trimmed.toLowerCase().includes('ji-response');
+
+    // Check for various tag formats
+    const checks = {
+      standardOpen: trimmed.includes('<ji-response>'),
+      standardClose: trimmed.includes('</ji-response>'),
+      titleCaseOpen: trimmed.includes('<JI-Response>'),
+      titleCaseClose: trimmed.includes('</JI-Response>'),
+      upperCaseOpen: trimmed.includes('<JI-RESPONSE>'),
+      upperCaseClose: trimmed.includes('</JI-RESPONSE>'),
+      hasAttributes: /<ji-response[^>]+>/i.test(trimmed),
+    };
+
+    // Build specific feedback
+    if (hasResponseWord) {
+      debugInfo += '\n- Contains word "ji-response" but no properly matched tags';
+    }
+
+    // Check for tag mismatches
+    const anyOpen = checks.standardOpen || checks.titleCaseOpen || checks.upperCaseOpen || checks.hasAttributes;
+    const anyClose = checks.standardClose || checks.titleCaseClose || checks.upperCaseClose;
+
+    if (anyOpen && anyClose) {
+      debugInfo += '\n- Found both opening and closing tags but they may not match properly';
+      if (checks.hasAttributes) {
+        debugInfo += '\n- Opening tag appears to have attributes (not supported)';
+      }
+      if (checks.titleCaseOpen || checks.titleCaseClose) {
+        debugInfo += '\n- Found title case tags (JI-Response) - should be lowercase (ji-response)';
+      }
+      if (checks.upperCaseOpen || checks.upperCaseClose) {
+        debugInfo += '\n- Found uppercase tags (JI-RESPONSE) - should be lowercase (ji-response)';
+      }
+    } else if (anyOpen && !anyClose) {
+      debugInfo += '\n- Has opening ji-response tag but missing closing tag';
+    } else if (!anyOpen && anyClose) {
+      debugInfo += '\n- Has closing ji-response tag but missing opening tag';
+    } else {
+      debugInfo += '\n- Missing both opening and closing ji-response tags';
+    }
+
+    // Check if this looks like tool metadata only
+    const metadataLines = lines.filter(
+      (line) =>
+        line.startsWith('Model:') ||
+        line.startsWith('Usage:') ||
+        line.startsWith('Tokens:') ||
+        line.startsWith('Cost:') ||
+        line.trim().length === 0,
+    );
+
+    if (metadataLines.length === lines.length) {
+      debugInfo += '\n- Output appears to contain only tool metadata, no actual response content';
+    }
+
+    debugInfo += `\n\nTo see full output, run with: DEBUG=1 ji analyze ${process.argv[3] || 'ISSUE-KEY'} --comment`;
+
+    return yield* Effect.fail(new ResponseExtractionError(debugInfo, output));
   });
 
 // ============= Comment Posting =============
@@ -482,12 +600,30 @@ const analyzeIssueEffect = (
     const fullIssueXml = commentsXml ? issueXml.replace('</issue>', `${commentsXml}</issue>`) : issueXml;
 
     // Build input for tool
-    const systemPrompt = `IMPORTANT: Your entire response MUST be wrapped in <response> tags like this:
-<response>
-Your analysis goes here...
-</response>
+    const systemPrompt = `CRITICAL FORMATTING REQUIREMENT:
 
-Do not include anything outside the <response> tags.
+Your ENTIRE response must be wrapped in opening <ji-response> and closing </ji-response> tags EXACTLY like this:
+
+<ji-response>
+Your analysis goes here...
+</ji-response>
+
+REQUIREMENTS:
+- Use lowercase "ji-response" (not JI-Response, JI-RESPONSE, or ji-response with attributes)
+- Include BOTH opening <ji-response> and closing </ji-response> tags
+- Put ALL content between the tags
+- Do NOT include any text before <ji-response> or after </ji-response>
+- The tags must be on their own lines
+
+EXAMPLE:
+<ji-response>
+## Analysis
+This issue appears to...
+
+## Recommendations
+1. First step...
+2. Second step...
+</ji-response>
 
 `;
     const fullInput = `${systemPrompt}\n\n${prompt}\n\n${fullIssueXml}`;
@@ -541,8 +677,9 @@ const handleAnalyzeError = (error: AnalyzeError | null): Effect.Effect<void, nev
       case 'ResponseExtractionError':
         yield* Console.error(chalk.red(`Response Error: ${error.message}`));
         if (error.output && process.env.DEBUG) {
-          yield* Console.error(chalk.dim('Tool output:'));
+          yield* Console.error(chalk.dim('\n=== Full Tool Output ==='));
           yield* Console.error(chalk.dim(error.output));
+          yield* Console.error(chalk.dim('=== End Tool Output ===\n'));
         }
         break;
       case 'JiraApiError':
