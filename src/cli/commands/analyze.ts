@@ -365,6 +365,40 @@ const extractResponse = (output: string): Effect.Effect<string, ResponseExtracti
       }
     }
 
+    // Check for partial matches - closing tag without opening tag
+    const hasClosingTag = /<\/ji-response>/i.test(output);
+    if (hasClosingTag) {
+      // Try to extract content before the closing tag, but skip common prefixes
+      const lines = output.trim().split('\n');
+      const closingTagIndex = lines.findIndex((line) => /<\/ji-response>/i.test(line));
+
+      if (closingTagIndex > 0) {
+        // Extract everything before the closing tag, skipping metadata lines
+        const contentLines = lines.slice(0, closingTagIndex);
+        const filteredLines = contentLines.filter((line) => {
+          const trimmed = line.trim();
+          // Skip common metadata patterns
+          return (
+            !trimmed.startsWith('Model:') &&
+            !trimmed.startsWith('Usage:') &&
+            !trimmed.startsWith('Tokens:') &&
+            !trimmed.startsWith('Cost:') &&
+            trimmed.length > 0
+          );
+        });
+
+        if (filteredLines.length > 0) {
+          const extractedContent = filteredLines.join('\n').trim();
+          if (extractedContent) {
+            if (process.env.DEBUG) {
+              console.log('DEBUG: Extracted content from output with missing opening tag');
+            }
+            return extractedContent;
+          }
+        }
+      }
+    }
+
     // Debug: Let's see if we can find any ji-response tags at all
     const hasAnyResponseTag = /<\/?ji-response[^>]*>/i.test(output);
     if (hasAnyResponseTag && process.env.DEBUG) {
