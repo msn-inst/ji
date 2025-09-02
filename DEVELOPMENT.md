@@ -466,6 +466,9 @@ DEBUG=* bun run src/cli.ts mine
 
 # Debug Effect operations
 EFFECT_LOG_LEVEL=Debug bun run src/cli.ts mine
+
+# Debug analyze command (shows full tool output)
+DEBUG=1 ji analyze PROJ-123 --comment
 ```
 
 ## Contributing
