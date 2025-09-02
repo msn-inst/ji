@@ -4,6 +4,41 @@ import { AuthenticationError, NetworkError, NotFoundError, ValidationError } fro
 
 export class JiraClientComments extends JiraClientBase {
   /**
+   * Format comment text for Jira REST API v2 (plain text/wiki markup)
+   */
+  private formatCommentForJira(comment: string): string {
+    // For REST API v2, use plain text/wiki markup instead of ADF
+    // Check if this looks like it's from the analysis command with more robust detection
+    const isAnalysisComment = this.isAnalysisComment(comment);
+
+    if (isAnalysisComment) {
+      // For analysis comments, preserve wiki markup formatting and replace robot emoji
+      return comment.replace(/:robot:/g, '🤖');
+    }
+
+    // For regular comments, return as plain text
+    return comment;
+  }
+
+  /**
+   * Detect if a comment is from the analysis command using multiple indicators
+   */
+  private isAnalysisComment(comment: string): boolean {
+    const analysisIndicators = [
+      // Starts with robot emoji or contains it at the beginning of a line
+      /(?:^|\n):robot:/,
+      // Contains h4. headers at the beginning of lines
+      /(?:^|\n)h4\.\s+\w+/,
+      // Contains typical analysis sections
+      /(?:^|\n)h4\.\s+(Summary|Affected components|Key files|Proposal|Next steps)/i,
+      // Contains Claude Code attribution
+      /🤖\s+Claude Code/,
+    ];
+
+    return analysisIndicators.some((indicator) => indicator.test(comment));
+  }
+
+  /**
    * Effect-based version of addComment with structured error handling
    */
   addCommentEffect(
@@ -21,6 +56,7 @@ export class JiraClientComments extends JiraClientBase {
         }
       }),
       Effect.flatMap(() => {
+        // Use REST API v2 for posting comments to support wiki markup format
         const url = `${this.config.jiraUrl}/rest/api/2/issue/${issueKey}/comment`;
 
         return Effect.tryPromise({
@@ -29,7 +65,7 @@ export class JiraClientComments extends JiraClientBase {
               method: 'POST',
               headers: this.getHeaders(),
               body: JSON.stringify({
-                body: comment,
+                body: this.formatCommentForJira(comment),
               }),
             });
 
@@ -95,6 +131,7 @@ export class JiraClientComments extends JiraClientBase {
         }
       }),
       Effect.flatMap(() => {
+        // Use REST API v3 for reading comments (standard for retrieval operations)
         const url = `${this.config.jiraUrl}/rest/api/3/issue/${issueKey}/comment`;
 
         return Effect.tryPromise({
