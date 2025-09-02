@@ -1,0 +1,393 @@
+bun test v1.2.17 (282dda62)
+
+src/test/integration-mine-command.test.ts:
+(pass) ji mine command - mock complete user issue search flow [4.35ms]
+(pass) ji mine command - handles empty results [0.16ms]
+(pass) ji mine command - handles search API errors [0.15ms]
+(pass) ji mine command - validates issue schema compliance [0.45ms]
+
+src/test/simple-coverage.test.ts:
+(pass) Search command coverage > search result formatting > should format Jira issues correctly
+(pass) Search command coverage > search result formatting > should format Confluence pages correctly
+(pass) Search command coverage > search query validation > should validate search query length
+(pass) Search command coverage > search query validation > should parse limit parameter correctly
+(pass) Background sync utilities > JQL query building > should build correct JQL for user issues [0.58ms]
+(pass) Background sync utilities > JQL query building > should handle project key filtering [0.03ms]
+(pass) Content manager helpers > content building > should build searchable content from Jira issue
+(pass) Content manager helpers > content building > should escape FTS5 special characters [0.10ms]
+(pass) Content manager helpers > metadata extraction > should extract metadata from issues
+(pass) Effect error handling > should create proper error types
+
+src/test/issue-comments-sync.test.ts:
+(pass) Issue Comments Sync > getAllProjectIssues includes comment field in API requests [0.34ms]
+(pass) Issue Comments Sync > searchIssues includes fields parameter when provided
+(pass) Issue Comments Sync > getIssue always includes comment field
+(pass) Issue Comments Sync > CLI recognizes --fetch flag for issue view command
+(pass) Issue Comments Sync > CLI recognizes --fetch flag for direct issue key command
+(pass) Issue Comments Sync > ISSUE_FIELDS constant includes comment field
+
+src/test/integration-simple.test.ts:
+(pass) Integration test framework MVP - environment protection works
+(pass) Integration test framework MVP - can bypass protection for testing
+(pass) Integration test concept - CLI command with injected dependencies
+
+src/test/issue-newline-handling.test.ts:
+(pass) Issue and Comment Newline Handling > formatDescription > should preserve newlines in plain text [0.16ms]
+(pass) Issue and Comment Newline Handling > formatDescription > should handle ADF hardBreak nodes [0.08ms]
+(pass) Issue and Comment Newline Handling > formatDescription > should handle multiple paragraphs [0.01ms]
+(pass) Issue and Comment Newline Handling > formatDescription > should handle headings with proper newlines
+(pass) Issue and Comment Newline Handling > formatDescription > should handle code blocks with newlines
+(pass) Issue and Comment Newline Handling > formatDescription > should handle bullet lists
+(pass) Issue and Comment Newline Handling > Comment body processing > should preserve simple newlines in comments [0.15ms]
+(pass) Issue and Comment Newline Handling > Comment body processing > should escape newlines for XML output [0.04ms]
+(pass) Issue and Comment Newline Handling > Comment body processing > should normalize excessive whitespace within lines
+(pass) Issue and Comment Newline Handling > Comment body processing > should filter out empty lines
+(pass) Issue and Comment Newline Handling > Comment body processing > should handle markdown-style formatting [0.05ms]
+
+src/test/integration-msw-issue-view.test.ts:
+(pass) Bun HTTP mocking with schema validation works perfectly [0.22ms]
+(pass) Bun HTTP mocking handles 404 errors correctly [0.26ms]
+(pass) Bun HTTP mocking handles network timeouts [0.03ms]
+(pass) Bun HTTP mocking supports multiple request interception [0.33ms]
+(pass) Bun HTTP mocking catches schema violations [0.46ms]
+✅ Bun native mocking: 10 requests in 0.26ms
+(pass) Bun HTTP mocking performance test [0.59ms]
+
+src/test/integration-issue-view-mvp.test.ts:
+(pass) Integration test MVP - issue formatting produces expected output [0.05ms]
+(pass) Integration test MVP - mock services behave correctly
+(pass) Integration test concept - end-to-end workflow simulation [0.28ms]
+
+src/test/mine-command-simple.test.ts:
+(pass) mine command helpers > issue formatting > should format issue data correctly for YAML output [0.02ms]
+(pass) mine command helpers > priority sorting > should sort issues by priority correctly [0.04ms]
+(pass) mine command helpers > priority sorting > should sort issues by priority then by date [0.08ms]
+(pass) mine command helpers > project grouping > should group issues by project correctly [0.05ms]
+(pass) mine command helpers > status filtering > should filter out closed/done/resolved statuses [0.06ms]
+
+src/test/issue-viewer-enhancements.test.ts:
+(pass) YAML comment formatting - proper array structure without count [0.48ms]
+(pass) API response validation - handles malformed data gracefully
+(pass) API response validation - handles missing fields property [0.31ms]
+(pass) Schema validation - well-formed issue passes validation [0.06ms]
+(pass) Description formatting - no artificial line breaks in YAML pipe literal [0.22ms]
+
+src/test/effect-schema-arbitrary.test.ts:
+(pass) createArbitraryIssue generates schema-compliant Issues
+(pass) createArbitraryIssue allows overrides while maintaining schema compliance
+(pass) createArbitraryUser generates valid users with overrides [0.03ms]
+(pass) createDiverseIssues generates varied issue data [0.13ms]
+(pass) createDiverseIssues creates issues with predictable patterns
+(pass) Enhanced mock generation maintains consistent structure
+
+src/test/api-utils.test.ts:
+(pass) API Utils > URL building > should build Jira search URL correctly
+(pass) API Utils > URL building > should build Confluence content URL
+(pass) API Utils > Authentication headers > should create basic auth header [0.35ms]
+(pass) API Utils > JQL query building > should build JQL for project search
+(pass) API Utils > JQL query building > should build JQL for user assignments
+(pass) API Utils > JQL query building > should handle JQL with multiple conditions
+(pass) API Utils > Response parsing > should extract issue data correctly [0.07ms]
+(pass) API Utils > Response parsing > should handle missing assignee gracefully
+(pass) API Utils > Pagination handling > should calculate pagination parameters
+(pass) API Utils > Pagination handling > should determine if more pages exist
+(pass) API Utils > Error handling > should parse API error responses
+(pass) API Utils > Content validation > should validate issue key format
+(pass) API Utils > Content validation > should validate project key format
+(pass) Content Transformation > Confluence storage format parsing > should extract text from storage format
+(pass) Content Transformation > Confluence storage format parsing > should handle nested HTML structures [0.25ms]
+(pass) Content Transformation > Content hashing > should generate consistent hashes for same content [0.01ms]
+(pass) Content Transformation > Content hashing > should generate different hashes for different content [0.03ms]
+(pass) Content Transformation > Metadata extraction > should extract metadata from issue fields [0.06ms]
+
+src/test/command-alias-verification.test.ts:
+(pass) ji EVAL-5767 and ji issue view EVAL-5767 are identical aliases [13.39ms]
+(pass) Command routing verification - both paths call same function [0.15ms]
+
+src/test/jira-client-utilities.test.ts:
+(pass) Jira Client Utilities > Error types > should create JiraError with proper structure
+(pass) Jira Client Utilities > Error types > should create NetworkError with proper structure
+(pass) Jira Client Utilities > Error types > should create AuthenticationError with proper structure [0.50ms]
+(pass) Jira Client Utilities > Error types > should create NotFoundError with proper structure [0.02ms]
+(pass) Jira Client Utilities > Error types > should create ValidationError with proper structure
+(pass) Jira Client Utilities > Issue field extraction > should extract standard issue fields
+(pass) Jira Client Utilities > Issue field extraction > should handle missing optional fields gracefully
+(pass) Jira Client Utilities > JQL query building > should build basic JQL queries
+(pass) Jira Client Utilities > JQL query building > should build user assignment JQL
+(pass) Jira Client Utilities > JQL query building > should build complex JQL with multiple conditions [0.21ms]
+(pass) Jira Client Utilities > JQL query building > should handle JQL escaping [0.07ms]
+(pass) Jira Client Utilities > URL building > should build Jira API URLs correctly [0.05ms]
+(pass) Jira Client Utilities > URL building > should build browse URLs from API URLs
+(pass) Jira Client Utilities > URL building > should build board URLs
+(pass) Jira Client Utilities > URL building > should build sprint URLs
+(pass) Jira Client Utilities > Authentication handling > should create basic auth headers
+(pass) Jira Client Utilities > Response validation > should validate issue structure [0.17ms]
+(pass) Jira Client Utilities > Response validation > should validate search response structure [0.04ms]
+(pass) Jira Client Utilities > Response validation > should validate board structure
+(pass) Jira Client Utilities > Pagination handling > should calculate pagination parameters
+(pass) Jira Client Utilities > Pagination handling > should determine if more pages exist
+(pass) Jira Client Utilities > Pagination handling > should calculate total pages
+(pass) Jira Client Utilities > Field mapping > should map standard issue fields
+(pass) Jira Client Utilities > Field mapping > should build fields query parameter
+(pass) Jira Client Utilities > Sprint field handling > should extract sprint from custom fields [0.17ms]
+(pass) Jira Client Utilities > Comment handling > should extract comments from issue [0.03ms]
+
+src/test/analyze-command.test.ts:
+
+src/test/comment-command.test.ts:
+(pass) Comment Command > addCommentEffect > should validate issue key format [0.97ms]
+(pass) Comment Command > addCommentEffect > should validate comment is not empty [0.26ms]
+(pass) Comment Command > addCommentEffect > should successfully post a comment with wiki markup [0.14ms]
+(pass) Comment Command > addCommentEffect > should use REST API v2 endpoint for wiki markup support [0.10ms]
+(pass) Comment Command > addCommentEffect > should send comment as plain text body for wiki markup [0.12ms]
+(pass) Comment Command > addCommentEffect > should handle 404 errors [0.17ms]
+(pass) Comment Command > addCommentEffect > should handle authentication errors [0.14ms]
+(pass) Comment Command > addCommentEffect > should handle network errors [0.15ms]
+(pass) Comment Command > Wiki Markup Examples > should support all wiki markup formatting [1.11ms]
+(pass) Comment Command > Wiki Markup Examples > should handle complex wiki markup documents [0.06ms]
+
+src/test/http-client-protection.test.ts:
+(pass) HttpClientService blocks real HTTP calls in test environment [2.28ms]
+(pass) HttpClientService protection can be bypassed with ALLOW_REAL_API_CALLS=true [0.63ms]
+
+src/test/open-command.test.ts:
+(pass) ji open - opens cached issue in browser [0.89ms]
+(pass) ji open - opens different issue key [0.14ms]
+(pass) ji open - validates issue key format [0.50ms]
+(pass) ji open - handles missing configuration [0.48ms]
+(pass) ji open - converts lowercase keys to uppercase [0.27ms]
+(pass) ji open - handles trailing slash in jiraUrl [0.22ms]
+https://test.atlassian.net/browse/TEST-1
+https://test.atlassian.net/browse/TEST-2
+https://test.atlassian.net/browse/TEST-3
+https://test.atlassian.net/browse/TEST-4
+https://test.atlassian.net/browse/TEST-5
+✅ Opened 5 issues in 0.31ms
+(pass) ji open - performance test for multiple opens [0.30ms]
+
+src/test/effect-error-handling.test.ts:
+(pass) Effect Error Handling > Custom error types > should create validation errors with proper structure [0.76ms]
+(pass) Effect Error Handling > Custom error types > should create network errors with proper structure
+(pass) Effect Error Handling > Error handling patterns > should handle errors with discriminated unions
+(pass) Effect Error Handling > Error handling patterns > should chain operations safely
+(pass) Effect Error Handling > Schema validation patterns > should validate issue schema [0.15ms]
+(pass) Effect Error Handling > Schema validation patterns > should validate configuration schema [0.05ms]
+(pass) Effect Error Handling > Resource management patterns > should handle resource acquisition and cleanup [0.05ms]
+(pass) Effect Error Handling > Async error handling > should handle async operations safely [2.48ms]
+
+src/test/ji-issue-view-integration.test.ts:
+(pass) ji EVAL-5767 command - real issue viewing with comments array processing [0.87ms]
+(pass) ji EVAL-5767 command - handles issues with no comments [0.40ms]
+(pass) ji EVAL-5767 command - handles issues with empty comments array [0.33ms]
+
+src/test/effect-integration.test.ts:
+(pass) Effect Integration Tests > ConfigManager with Effect patterns > should handle configuration lifecycle with Effects [1.03ms]
+No config found, creating default
+(pass) Effect Integration Tests > ConfigManager with Effect patterns > should handle missing configuration with error recovery [0.63ms]
+(pass) Effect Integration Tests > ConfigManager with Effect patterns > should validate configuration with schemas [0.90ms]
+(pass) Effect Integration Tests > Settings management with Effects > should manage settings lifecycle [0.65ms]
+(pass) Effect Integration Tests > Settings management with Effects > should validate Meilisearch index prefix format [0.59ms]
+Authenticated as Test User
+(pass) Effect Integration Tests > Complex Effect compositions > should handle complex authentication flow [1.12ms]
+(pass) Effect Integration Tests > Complex Effect compositions > should handle retry with exponential backoff [32.69ms]
+(pass) Effect Integration Tests > Complex Effect compositions > should compose multiple operations with proper error handling [2.82ms]
+Caught error: ParseError
+(pass) Effect Integration Tests > Error boundaries and recovery > should handle cascading errors gracefully [0.93ms]
+
+src/test/mine-command-pretty.test.ts:
+(pass) ji mine --pretty flag formatting > priority ordering > should order priorities correctly [0.05ms]
+(pass) ji mine --pretty flag formatting > status color logic > should identify in-progress statuses [0.03ms]
+(pass) ji mine --pretty flag formatting > status color logic > should identify review statuses
+(pass) ji mine --pretty flag formatting > status color logic > should identify todo/open statuses
+(pass) ji mine --pretty flag formatting > issue sorting > should sort issues by priority then by date [0.10ms]
+(pass) ji mine --pretty flag formatting > YAML output format (without --pretty) > should generate valid YAML structure [0.11ms]
+(pass) ji mine --pretty flag formatting > grouping by project > should group issues by project key [0.31ms]
+
+src/test/status-command.test.ts:
+(pass) status command - placeholder test [0.02ms]
+
+src/test/no-real-api-calls.test.ts:
+(pass) JiraClient blocks real API calls in test environment [0.04ms]
+(pass) Environment protection can be bypassed with ALLOW_REAL_API_CALLS=true [0.03ms]
+
+src/lib/config-extended.test.ts:
+(pass) ConfigManager Extended Tests > Authentication Management > should save and retrieve auth configuration [0.21ms]
+(pass) ConfigManager Extended Tests > Authentication Management > should update existing configuration [0.22ms]
+(pass) ConfigManager Extended Tests > Authentication Management > should handle missing configuration gracefully [0.08ms]
+(pass) ConfigManager Extended Tests > Authentication Management > should persist configuration across instances [0.17ms]
+(pass) ConfigManager Extended Tests > Authentication Management > should handle close operation
+Failed to read config file: 89 |   async getConfig(): Promise<Config | null> {
+90 |     // Try to read from config file
+91 |     if (existsSync(this.configFile)) {
+92 |       try {
+93 |         const authData = readFileSync(this.configFile, 'utf-8');
+94 |         const config = JSON.parse(authData);
+                                 ^
+SyntaxError: JSON Parse error: Unexpected identifier "invalid"
+      at getConfig (/Users/ashafovaloff/github/ji/src/lib/config.ts:94:29)
+      at getConfig (/Users/ashafovaloff/github/ji/src/lib/config.ts:89:45)
+      at <anonymous> (/Users/ashafovaloff/github/ji/src/lib/config-extended.test.ts:117:36)
+      at <anonymous> (/Users/ashafovaloff/github/ji/src/lib/config-extended.test.ts:112:53)
+
+(pass) ConfigManager Extended Tests > Error Handling > should handle invalid JSON in auth config [0.24ms]
+(pass) ConfigManager Extended Tests > Error Handling > should create config directory if it does not exist [0.56ms]
+(pass) ConfigManager Extended Tests > Security > should create config.json with restricted permissions [0.15ms]
+
+src/lib/config.test.ts:
+(pass) ConfigManager > should create a database file [0.03ms]
+(pass) ConfigManager > should have required methods [0.03ms]
+
+src/lib/config.effect.test.ts:
+(pass) ConfigManager Effect-based Tests > Effect-based getConfigEffect > should successfully read valid configuration [0.26ms]
+(pass) ConfigManager Effect-based Tests > Effect-based getConfigEffect > should fail with ConfigError when no configuration exists [0.14ms]
+(pass) ConfigManager Effect-based Tests > Effect-based getConfigEffect > should fail with ParseError for invalid JSON [0.25ms]
+(pass) ConfigManager Effect-based Tests > Effect-based getConfigEffect > should fail with ValidationError for invalid schema [0.30ms]
+(pass) ConfigManager Effect-based Tests > Effect-based getConfigEffect > should validate URL format correctly [0.35ms]
+(pass) ConfigManager Effect-based Tests > Effect-based getConfigEffect > should validate email format correctly [1.73ms]
+(pass) ConfigManager Effect-based Tests > Effect-based getConfigEffect > should handle optional fields correctly [0.29ms]
+(pass) ConfigManager Effect-based Tests > Effect composition patterns > should compose with other Effects using pipe [0.26ms]
+(pass) ConfigManager Effect-based Tests > Effect composition patterns > should handle errors with catchAll [0.11ms]
+(pass) ConfigManager Effect-based Tests > Effect composition patterns > should handle specific error types with catchTag [0.22ms]
+(pass) ConfigManager Effect-based Tests > Effect composition patterns > should retry on failure [0.45ms]
+(pass) ConfigManager Effect-based Tests > Settings management with Effects > should manage settings with Effect patterns [0.54ms]
+(pass) ConfigManager Effect-based Tests > Meilisearch index prefix > should derive index prefix from email [0.34ms]
+(pass) ConfigManager Effect-based Tests > Meilisearch index prefix > should use custom prefix from settings [0.17ms]
+(pass) ConfigManager Effect-based Tests > Meilisearch index prefix > should fallback to default when no config exists [0.04ms]
+(pass) ConfigManager Effect-based Tests > Security and permissions > should create config with restricted permissions [0.16ms]
+(pass) ConfigManager Effect-based Tests > Security and permissions > should create settings with restricted permissions [0.17ms]
+
+src/cli/formatters/progress.test.ts:
+(pass) createProgressBar > should create a progress bar with 0% progress
+(pass) createProgressBar > should create a progress bar with 50% progress
+(pass) createProgressBar > should create a progress bar with 100% progress
+(pass) createProgressBar > should handle custom width
+(pass) createProgressBar > should handle edge case of 0 total
+(pass) getScoreColor > should return green color for high scores (>= 90)
+(pass) getScoreColor > should return green color for score of exactly 90
+(pass) getScoreColor > should return yellow color for good scores (75-89)
+(pass) getScoreColor > should return yellow color for score of exactly 75
+(pass) getScoreColor > should return dim yellow color for medium scores (60-74)
+(pass) getScoreColor > should return dim yellow color for score of exactly 60
+(pass) getScoreColor > should return dim color for low scores (< 60)
+
+src/cli/formatters/issue.test.ts:
+(pass) issue formatter > formatDescription > should handle null/undefined descriptions [0.02ms]
+(pass) issue formatter > formatDescription > should handle empty string descriptions [0.02ms]
+(pass) issue formatter > formatDescription > should handle plain text descriptions [0.01ms]
+(pass) issue formatter > formatDescription > should handle ADF format descriptions
+(pass) issue formatter > formatDescription > should handle complex ADF format with multiple nodes [0.02ms]
+(pass) issue formatter > formatDescription > should handle invalid ADF-like objects
+(pass) issue formatter > formatDescription > should handle non-string, non-ADF objects
+(pass) issue formatter > parseADF > should handle empty nodes array
+(pass) issue formatter > parseADF > should parse paragraph nodes
+(pass) issue formatter > parseADF > should parse text nodes
+(pass) issue formatter > parseADF > should handle text nodes with empty/missing text [0.12ms]
+(pass) issue formatter > parseADF > should parse hard breaks
+(pass) issue formatter > parseADF > should parse mentions
+(pass) issue formatter > parseADF > should handle mentions without attrs or text [0.05ms]
+(pass) issue formatter > parseADF > should parse emojis
+(pass) issue formatter > parseADF > should handle emojis without attrs
+(pass) issue formatter > parseADF > should parse bullet lists [0.05ms]
+(pass) issue formatter > parseADF > should parse ordered lists
+(pass) issue formatter > parseADF > should parse list items
+(pass) issue formatter > parseADF > should handle empty lists and list items
+(pass) issue formatter > parseADF > should parse code blocks
+(pass) issue formatter > parseADF > should handle empty code blocks
+(pass) issue formatter > parseADF > should parse headings with different levels
+(pass) issue formatter > parseADF > should handle headings with invalid level attrs
+(pass) issue formatter > parseADF > should parse blockquotes
+(pass) issue formatter > parseADF > should handle empty blockquotes
+(pass) issue formatter > parseADF > should parse horizontal rules
+(pass) issue formatter > parseADF > should parse links
+(pass) issue formatter > parseADF > should handle links with missing or invalid href
+(pass) issue formatter > parseADF > should handle unknown node types gracefully
+(pass) issue formatter > parseADF > should handle complex nested structures
+(pass) issue formatter > getJiraStatusIcon > done/completed statuses > should return ✅ for done statuses
+(pass) issue formatter > getJiraStatusIcon > done/completed statuses > should return ✅ for closed statuses
+(pass) issue formatter > getJiraStatusIcon > done/completed statuses > should return ✅ for resolved statuses
+(pass) issue formatter > getJiraStatusIcon > in progress/review statuses > should return 🔄 for progress statuses
+(pass) issue formatter > getJiraStatusIcon > in progress/review statuses > should return 🔄 for review statuses
+(pass) issue formatter > getJiraStatusIcon > blocked statuses > should return 🚫 for blocked statuses
+(pass) issue formatter > getJiraStatusIcon > todo/open/backlog statuses > should return 📋 for todo statuses
+(pass) issue formatter > getJiraStatusIcon > todo/open/backlog statuses > should return 📋 for open statuses
+(pass) issue formatter > getJiraStatusIcon > todo/open/backlog statuses > should return 📋 for backlog statuses
+(pass) issue formatter > getJiraStatusIcon > unknown/custom statuses > should return ❓ for unknown statuses [0.42ms]
+(pass) issue formatter > getJiraStatusIcon > edge cases > should handle mixed case and partial matches
+(pass) issue formatter > getJiraStatusIcon > edge cases > should prioritize first matching pattern [0.03ms]
+
+src/cli/formatters/time.test.ts:
+(pass) formatTimeAgo > should return "unknown" for undefined timestamp [0.11ms]
+(pass) formatTimeAgo > should return "just now" for very recent timestamps
+(pass) formatTimeAgo > should format minutes ago
+(pass) formatTimeAgo > should format singular minute
+(pass) formatTimeAgo > should format hours ago
+(pass) formatTimeAgo > should format singular hour
+(pass) formatTimeAgo > should format days ago
+(pass) formatTimeAgo > should format singular day
+(pass) formatTimeAgo > should format months ago
+(pass) formatTimeAgo > should format multiple months
+(pass) formatTimeAgo > should format years ago
+(pass) formatTimeAgo > should format multiple years
+
+src/cli/utils/time-parser.test.ts:
+(pass) time-parser > parseSinceExpression > keywords > should parse "now" keyword [0.09ms]
+(pass) time-parser > parseSinceExpression > keywords > should parse "today" keyword [0.02ms]
+(pass) time-parser > parseSinceExpression > keywords > should parse "yesterday" keyword
+(pass) time-parser > parseSinceExpression > keywords > should parse "week" keyword
+(pass) time-parser > parseSinceExpression > keywords > should parse "month" keyword
+(pass) time-parser > parseSinceExpression > keywords > should be case insensitive
+(pass) time-parser > parseSinceExpression > keywords > should handle whitespace
+(pass) time-parser > parseSinceExpression > relative time expressions > should parse hours (h)
+(pass) time-parser > parseSinceExpression > relative time expressions > should parse days (d)
+(pass) time-parser > parseSinceExpression > relative time expressions > should parse weeks (w)
+(pass) time-parser > parseSinceExpression > relative time expressions > should parse months (m)
+(pass) time-parser > parseSinceExpression > relative time expressions > should handle decimal values
+(pass) time-parser > parseSinceExpression > relative time expressions > should handle whitespace in expressions
+(pass) time-parser > parseSinceExpression > relative time expressions > should be case insensitive for units
+(pass) time-parser > parseSinceExpression > Unix timestamps > should parse Unix timestamps in seconds [0.17ms]
+(pass) time-parser > parseSinceExpression > Unix timestamps > should parse valid Unix timestamps in milliseconds range [0.02ms]
+(pass) time-parser > parseSinceExpression > Unix timestamps > should reject invalid Unix timestamps
+(pass) time-parser > parseSinceExpression > ISO date formats > should parse ISO date strings [0.06ms]
+(pass) time-parser > parseSinceExpression > ISO date formats > should parse date-only strings
+(pass) time-parser > parseSinceExpression > ISO date formats > should parse various date formats [0.05ms]
+(pass) time-parser > parseSinceExpression > error cases > should throw error for invalid expressions
+(pass) time-parser > parseSinceExpression > error cases > should provide helpful error message
+(pass) time-parser > parseStatusFilter > should return undefined for empty input [0.08ms]
+(pass) time-parser > parseStatusFilter > should handle special "all" keyword
+(pass) time-parser > parseStatusFilter > should handle special "open" keyword
+(pass) time-parser > parseStatusFilter > should handle special "closed" keyword
+(pass) time-parser > parseStatusFilter > should parse comma-separated lists [0.08ms]
+(pass) time-parser > parseStatusFilter > should handle whitespace in comma-separated lists [0.01ms]
+(pass) time-parser > parseStatusFilter > should filter out empty values
+(pass) time-parser > parseStatusFilter > should handle single status values
+(pass) time-parser > formatSinceTime > should format recent times in minutes
+(pass) time-parser > formatSinceTime > should format times in hours [0.05ms]
+(pass) time-parser > formatSinceTime > should format times in days
+(pass) time-parser > formatSinceTime > should format old times as dates [0.03ms]
+(pass) time-parser > formatSinceTime > should handle edge cases
+(pass) time-parser > formatSinceTime > should handle future timestamps
+
+src/cli/utils/team.test.ts:
+(pass) team utilities > getTeamFromMetadata > should extract team from spaceName in metadata
+(pass) team utilities > getTeamFromMetadata > should extract team from assignee in metadata
+(pass) team utilities > getTeamFromMetadata > should extract team from spaceKey when metadata is not available
+(pass) team utilities > getTeamFromMetadata > should prioritize spaceName over assignee
+(pass) team utilities > getTeamFromMetadata > should prioritize spaceName over spaceKey
+(pass) team utilities > getTeamFromMetadata > should prioritize assignee over spaceKey
+(pass) team utilities > getTeamFromMetadata > should handle assignee without @ symbol
+(pass) team utilities > getTeamFromMetadata > should handle assignee with multiple @ symbols
+(pass) team utilities > getTeamFromMetadata > should return "Unknown" when no valid team information is available
+(pass) team utilities > getTeamFromMetadata > should return "Unknown" when metadata exists but has no team info
+(pass) team utilities > getTeamFromMetadata > should handle null metadata
+(pass) team utilities > getTeamFromMetadata > should handle undefined metadata
+(pass) team utilities > getTeamFromMetadata > should handle non-string spaceName
+(pass) team utilities > getTeamFromMetadata > should handle non-string assignee
+(pass) team utilities > getTeamFromMetadata > should handle empty strings
+(pass) team utilities > getTeamFromMetadata > should handle whitespace-only strings
+(pass) team utilities > getTeamFromMetadata > should handle complex assignee email formats
+(pass) team utilities > getTeamFromMetadata > should handle mixed case and special characters in spaceName
+(pass) team utilities > getTeamFromMetadata > should work with minimal content objects
+(pass) team utilities > getTeamFromMetadata > should handle complex nested metadata structures
+
+src/cli/commands/board.test.ts:
+🔒 MSW is active - all network requests will be intercepted

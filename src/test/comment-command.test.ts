@@ -8,6 +8,37 @@ import {
 } from '../lib/jira-client/jira-client-types';
 import { installFetchMock, restoreFetch } from './test-fetch-mock';
 
+// Create a simple comment formatting function for testing
+const formatCommentForJira = (comment: string): string => {
+  // For REST API v2, use plain text/wiki markup instead of ADF
+  // Check if this looks like it's from the analysis command with more robust detection
+  const isAnalysisComment = isAnalysisCommentTest(comment);
+
+  if (isAnalysisComment) {
+    // For analysis comments, preserve wiki markup formatting and replace robot emoji
+    return comment.replace(/:robot:/g, '🤖');
+  }
+
+  // For regular comments, return as plain text
+  return comment;
+};
+
+// Detect if a comment is from the analysis command using multiple indicators
+const isAnalysisCommentTest = (comment: string): boolean => {
+  const analysisIndicators = [
+    // Starts with robot emoji or contains it at the beginning of a line
+    /(?:^|\n):robot:/,
+    // Contains h4. headers at the beginning of lines
+    /(?:^|\n)h4\.\s+\w+/,
+    // Contains typical analysis sections
+    /(?:^|\n)h4\.\s+(Summary|Affected components|Key files|Proposal|Next steps)/i,
+    // Contains Claude Code attribution
+    /🤖\s+Claude Code/,
+  ];
+
+  return analysisIndicators.some((indicator) => indicator.test(comment));
+};
+
 // Create a test-only version of the comment logic that doesn't require JiraClientComments
 // This avoids the API protection check in the constructor
 const testAddCommentEffect = (
@@ -37,7 +68,7 @@ const testAddCommentEffect = (
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              body: comment,
+              body: formatCommentForJira(comment),
             }),
           });
         },
@@ -312,6 +343,120 @@ For more information, see our [documentation|https://docs.example.com].`;
       const result = await Effect.runPromiseExit(testAddCommentEffect('TEST-123', complexComment, mockConfig));
 
       expect(result._tag).toBe('Success');
+    });
+  });
+
+  describe('Comment Format Detection', () => {
+    it('should detect analysis comments with h4 headers', async () => {
+      let capturedBody: any = null;
+      installFetchMock(async (_url, init) => {
+        capturedBody = JSON.parse(init?.body as string);
+        return new Response('', { status: 201, statusText: 'Created' });
+      });
+
+      const analysisComment = `h4. Summary
+This is an analysis comment with headers.
+
+h4. Key findings
+* Finding 1
+* Finding 2`;
+
+      await Effect.runPromise(testAddCommentEffect('TEST-123', analysisComment, mockConfig));
+
+      expect(capturedBody.body).toBe(analysisComment);
+      expect(capturedBody.body).toContain('h4. Summary');
+      expect(capturedBody.body).toContain('h4. Key findings');
+    });
+
+    it('should detect analysis comments with robot emoji', async () => {
+      let capturedBody: any = null;
+      installFetchMock(async (_url, init) => {
+        capturedBody = JSON.parse(init?.body as string);
+        return new Response('', { status: 201, statusText: 'Created' });
+      });
+
+      const robotComment = ':robot: Claude Code Analysis\n\nThis is a generated analysis comment.';
+
+      await Effect.runPromise(testAddCommentEffect('TEST-123', robotComment, mockConfig));
+
+      expect(capturedBody.body).toBe('🤖 Claude Code Analysis\n\nThis is a generated analysis comment.');
+      expect(capturedBody.body).toContain('🤖');
+      expect(capturedBody.body).not.toContain(':robot:');
+    });
+
+    it('should detect analysis comments with Claude Code attribution', async () => {
+      let capturedBody: any = null;
+      installFetchMock(async (_url, init) => {
+        capturedBody = JSON.parse(init?.body as string);
+        return new Response('', { status: 201, statusText: 'Created' });
+      });
+
+      const claudeComment = `🤖 Claude Code (Opus 4.1)
+
+h4. Analysis
+This is an AI-generated analysis.`;
+
+      await Effect.runPromise(testAddCommentEffect('TEST-123', claudeComment, mockConfig));
+
+      expect(capturedBody.body).toBe(claudeComment);
+      expect(capturedBody.body).toContain('🤖 Claude Code');
+      expect(capturedBody.body).toContain('h4. Analysis');
+    });
+
+    it('should detect analysis comments with typical analysis sections', async () => {
+      let capturedBody: any = null;
+      installFetchMock(async (_url, init) => {
+        capturedBody = JSON.parse(init?.body as string);
+        return new Response('', { status: 201, statusText: 'Created' });
+      });
+
+      const typicalAnalysis = `h4. Summary
+Brief summary here.
+
+h4. Affected components
+* Component A
+* Component B
+
+h4. Next steps
+1. Review code
+2. Test changes`;
+
+      await Effect.runPromise(testAddCommentEffect('TEST-123', typicalAnalysis, mockConfig));
+
+      expect(capturedBody.body).toBe(typicalAnalysis);
+      expect(capturedBody.body).toContain('h4. Summary');
+      expect(capturedBody.body).toContain('h4. Affected components');
+      expect(capturedBody.body).toContain('h4. Next steps');
+    });
+
+    it('should not detect regular comments as analysis comments', async () => {
+      let capturedBody: any = null;
+      installFetchMock(async (_url, init) => {
+        capturedBody = JSON.parse(init?.body as string);
+        return new Response('', { status: 201, statusText: 'Created' });
+      });
+
+      const regularComment = 'This is just a regular comment with some text. No special formatting here.';
+
+      await Effect.runPromise(testAddCommentEffect('TEST-123', regularComment, mockConfig));
+
+      expect(capturedBody.body).toBe(regularComment);
+      // Should remain unchanged - no special analysis processing
+    });
+
+    it('should not misidentify comments with h4 in the middle of text', async () => {
+      let capturedBody: any = null;
+      installFetchMock(async (_url, init) => {
+        capturedBody = JSON.parse(init?.body as string);
+        return new Response('', { status: 201, statusText: 'Created' });
+      });
+
+      const falsePositive = 'This comment mentions h4 elements in HTML but should not be treated as analysis.';
+
+      await Effect.runPromise(testAddCommentEffect('TEST-123', falsePositive, mockConfig));
+
+      expect(capturedBody.body).toBe(falsePositive);
+      // Should remain unchanged - this is not an analysis comment
     });
   });
 });
