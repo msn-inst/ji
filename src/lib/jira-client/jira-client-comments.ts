@@ -2,7 +2,236 @@ import { Effect, pipe } from 'effect';
 import { JiraClientBase } from './jira-client-base.js';
 import { AuthenticationError, NetworkError, NotFoundError, ValidationError } from './jira-client-types.js';
 
+// ADF (Atlassian Document Format) type definitions
+interface ADFTextNode {
+  type: 'text';
+  text: string;
+  marks?: Array<{ type: 'code' | 'strong' | 'em' }>;
+}
+
+interface ADFHeading {
+  type: 'heading';
+  attrs: { level: number };
+  content: ADFTextNode[];
+}
+
+interface ADFParagraph {
+  type: 'paragraph';
+  content: ADFTextNode[];
+}
+
+interface ADFListItem {
+  type: 'listItem';
+  content: ADFParagraph[];
+}
+
+interface ADFBulletList {
+  type: 'bulletList';
+  content: ADFListItem[];
+}
+
+type ADFContent = ADFHeading | ADFParagraph | ADFListItem | ADFBulletList;
+
+interface ADFDocument {
+  type: 'doc';
+  version: 1;
+  content: ADFContent[];
+}
+
 export class JiraClientComments extends JiraClientBase {
+  /**
+   * Format comment text for Jira REST API v2 (plain text/wiki markup)
+   */
+  private formatCommentForJira(comment: string): string {
+    // For REST API v2, use plain text/wiki markup instead of ADF
+    // Check if this looks like it's from the analysis command (contains wiki markup)
+    const isAnalysisComment = comment.includes('h4.') || comment.includes(':robot:');
+
+    if (isAnalysisComment) {
+      // For analysis comments, preserve wiki markup formatting
+      return comment.replace(':robot:', '🤖');
+    }
+
+    // For regular comments, return as plain text
+    return comment;
+  }
+
+  /**
+   * Convert Jira wiki markup to ADF format
+   */
+  private convertWikiMarkupToADF(text: string): ADFDocument {
+    const lines = text.split('\n');
+    const content: ADFContent[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      if (!line) {
+        // Empty line - add paragraph break
+        continue;
+      }
+
+      if (line.startsWith(':robot:')) {
+        // Convert robot emoji to actual emoji and make it a heading
+        const robotText = line.replace(':robot:', '🤖');
+        content.push({
+          type: 'heading',
+          attrs: { level: 3 },
+          content: [{ type: 'text', text: robotText }],
+        });
+      } else if (line.startsWith('h4.')) {
+        // Convert h4. headers to ADF headings
+        const headerText = line.replace('h4.', '').trim();
+        content.push({
+          type: 'heading',
+          attrs: { level: 4 },
+          content: [{ type: 'text', text: headerText }],
+        });
+      } else if (line.startsWith('* ')) {
+        // Handle bullet points
+        const bulletText = line.replace('* ', '');
+
+        // Check if this is a file path with description (contains: )
+        if (bulletText.includes(': ') && bulletText.includes('{{') && bulletText.includes('}}')) {
+          const [pathPart, description] = bulletText.split(': ', 2);
+          const filePath = pathPart.replace(/[{}]/g, ''); // Remove {{ }}
+
+          content.push({
+            type: 'listItem',
+            content: [
+              {
+                type: 'paragraph',
+                content: [
+                  { type: 'text', text: filePath, marks: [{ type: 'code' }] },
+                  { type: 'text', text: `: ${description}` },
+                ],
+              },
+            ],
+          });
+        } else {
+          // Handle {{path}} formatting for code
+          const formattedText = this.formatInlineCode(bulletText);
+          content.push({
+            type: 'listItem',
+            content: [
+              {
+                type: 'paragraph',
+                content: formattedText,
+              },
+            ],
+          });
+        }
+      } else {
+        // Regular paragraph text
+        const formattedText = this.formatInlineCode(line);
+        content.push({
+          type: 'paragraph',
+          content: formattedText,
+        });
+      }
+    }
+
+    // Wrap bullet points in bulletList
+    const processedContent: ADFContent[] = [];
+    let currentList: ADFListItem[] = [];
+
+    for (const item of content) {
+      if (item.type === 'listItem') {
+        currentList.push(item as ADFListItem);
+      } else {
+        if (currentList.length > 0) {
+          processedContent.push({
+            type: 'bulletList',
+            content: currentList,
+          });
+          currentList = [];
+        }
+        processedContent.push(item);
+      }
+    }
+
+    // Handle remaining list items
+    if (currentList.length > 0) {
+      processedContent.push({
+        type: 'bulletList',
+        content: currentList,
+      });
+    }
+
+    // Ensure we have at least one content element
+    if (processedContent.length === 0) {
+      processedContent.push({
+        type: 'paragraph',
+        content: [{ type: 'text', text: 'No content' }],
+      });
+    }
+
+    return {
+      type: 'doc',
+      version: 1,
+      content: processedContent,
+    };
+  }
+
+  /**
+   * Convert simple markdown to ADF format
+   */
+  private convertMarkdownToADF(text: string): ADFDocument {
+    const lines = text.split('\n');
+    const content: ADFContent[] = [];
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+
+      const formattedText = this.formatInlineCode(line);
+      content.push({
+        type: 'paragraph',
+        content: formattedText,
+      });
+    }
+
+    // Ensure we have at least one content element
+    if (content.length === 0) {
+      content.push({
+        type: 'paragraph',
+        content: [{ type: 'text', text: 'No content' }],
+      });
+    }
+
+    return {
+      type: 'doc',
+      version: 1,
+      content: content,
+    };
+  }
+
+  /**
+   * Format inline code and text with proper ADF marks
+   */
+  private formatInlineCode(text: string): ADFTextNode[] {
+    const result: ADFTextNode[] = [];
+    const parts = text.split(/(\{\{[^}]+\}\})/g);
+
+    for (const part of parts) {
+      if (part.startsWith('{{') && part.endsWith('}}')) {
+        // Code block
+        const code = part.slice(2, -2);
+        result.push({
+          type: 'text',
+          text: code,
+          marks: [{ type: 'code' }],
+        });
+      } else if (part) {
+        // Regular text
+        result.push({
+          type: 'text',
+          text: part,
+        });
+      }
+    }
+
+    return result.length > 0 ? result : [{ type: 'text', text: text }];
+  }
   /**
    * Effect-based version of addComment with structured error handling
    */
@@ -29,7 +258,7 @@ export class JiraClientComments extends JiraClientBase {
               method: 'POST',
               headers: this.getHeaders(),
               body: JSON.stringify({
-                body: comment,
+                body: this.formatCommentForJira(comment),
               }),
             });
 
