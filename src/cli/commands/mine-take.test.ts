@@ -20,9 +20,9 @@ describe('Mine-Take Command with MSW', () => {
       'Effect composition with pipe',
       'Error handling with proper types',
       'Resource cleanup patterns',
-      'MSW integration for testing'
+      'MSW integration for testing',
     ];
-    
+
     expect(migratedFeatures.length).toBeGreaterThan(0);
   });
 

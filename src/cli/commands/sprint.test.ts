@@ -11,7 +11,7 @@ describe('Sprint Command (needs Effect migration)', () => {
   test('documents Effect migration requirements', () => {
     // The sprint command should be migrated to use:
     // - Effect.tryPromise for API calls
-    // - Effect Schema for validation  
+    // - Effect Schema for validation
     // - Effect composition patterns
     // - Proper resource management
     const migrationNeeded = [
@@ -19,9 +19,9 @@ describe('Sprint Command (needs Effect migration)', () => {
       'Effect Schema validation',
       'Effect composition with pipe',
       'Resource management with Effect.tap',
-      'Error handling with Effect.catchAll'
+      'Error handling with Effect.catchAll',
     ];
-    
+
     expect(migrationNeeded.length).toBeGreaterThan(0);
   });
 

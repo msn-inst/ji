@@ -17,11 +17,11 @@ describe('Board Command with Effect and MSW', () => {
     const effectPatterns = [
       'Effect.pipe for composition',
       'Effect.flatMap for chaining',
-      'Effect.tap for cleanup', 
+      'Effect.tap for cleanup',
       'Effect.catchAll for errors',
-      'ConfigManager resource management'
+      'ConfigManager resource management',
     ];
-    
+
     expect(effectPatterns.length).toBeGreaterThan(0);
   });
 

@@ -17,13 +17,13 @@ describe('Done Command with Effect and MSW', () => {
     // - Resource cleanup patterns
     const implementedPatterns = [
       'Effect Schema validation',
-      'Effect.tryPromise usage', 
+      'Effect.tryPromise usage',
       'Effect composition patterns',
       'Error handling with catchAll',
       'Resource management',
-      'Spinner integration with Effects'
+      'Spinner integration with Effects',
     ];
-    
+
     expect(implementedPatterns.length).toBeGreaterThan(0);
   });
 
