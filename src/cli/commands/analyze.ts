@@ -649,6 +649,15 @@ Your analysis goes here...
 2. The content inside the tags MUST start with the robot header in this exact format:
 :robot: [Tool Name] ([Model Name])
 
+CORRECT EXAMPLES of robot header:
+:robot: Claude Code (Sonnet 4)
+:robot: Gemini CLI (1.5 Pro)
+:robot: ChatGPT Plus (GPT-4)
+
+WRONG FORMAT (do not use):
+:robot: [Claude Code (Sonnet 4)]
+:robot: [Gemini (1.5 Pro)]
+
 REQUIREMENTS:
 - Use lowercase "ji-response" (not JI-Response, JI-RESPONSE, or ji-response with attributes)
 - Include BOTH opening <ji-response> and closing </ji-response> tags
@@ -659,7 +668,7 @@ REQUIREMENTS:
 
 EXAMPLE FORMAT:
 <ji-response>
-:robot: [Your Tool Name] ([Your Model Name])
+:robot: Claude Code (Sonnet 4)
 
 h4. Summary
 This issue appears to...
