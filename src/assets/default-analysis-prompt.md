@@ -10,13 +10,17 @@ If you're not in the relevant codebase, the analysis may be less accurate.
 
 ## Required Analysis
 
-Begin your response with
-🤖 LLM Tool (Model)
-to indicate this is an automated analysis.
-e.g.
-🤖 Claude Code (Sonnet 4)
-or
-🤖 Gemini (Gemini 2.5 Flash)
+**CRITICAL REQUIREMENT**: Your response MUST begin with the robot header to indicate this is an automated analysis.
+
+**MANDATORY FORMAT**: Begin your response with exactly:
+:robot: [Tool Name] ([Model Name])
+
+Examples:
+:robot: Claude Code (Sonnet 4)
+:robot: Gemini (Gemini 2.5 Flash)
+:robot: OpenCode (GPT-4)
+
+**DO NOT** use the emoji 🤖 - use the text :robot: which will be converted automatically.
 
 When it is wrong, disagree with previous analysis.
 
@@ -62,7 +66,7 @@ h4. Next steps
 * [immediate action 1]
 * [immediate action 2]
 
-Output your response in an opening <ji-response> and closing </ji-response> tag. Remember, the contents of this response (inside the <ji-response> tags) should start with :robot: with named tool.
+**CRITICAL**: Output your response in an opening <ji-response> and closing </ji-response> tag. The contents inside the tags MUST start with :robot: [Tool Name] ([Model Name]) as shown in the examples above.
 
 ## Example
 
