@@ -593,11 +593,12 @@ const analyzeIssueEffect = (
       if (options.tool) {
         return pipe(
           checkCommand(options.tool),
-          Effect.flatMap((exists) =>
-            exists
-              ? Effect.succeed(`${options.tool} -p`)
-              : Effect.fail(new ToolNotFoundError(`Tool '${options.tool}' not found`)),
-          ),
+          Effect.flatMap((exists) => {
+            if (!exists) {
+              return Effect.fail(new ToolNotFoundError(`Tool '${options.tool}' not found`));
+            }
+            return Effect.succeed(`${options.tool} -p`);
+          }),
         );
       }
       if (config.analysisCommand) {
@@ -612,6 +613,9 @@ const analyzeIssueEffect = (
     yield* Schema.decodeUnknown(ToolCommandSchema)(toolCommand).pipe(
       Effect.mapError(() => new ConfigurationError(`Invalid tool command format: ${toolCommand}`)),
     );
+
+    // Debug: Show which tool is being used
+    yield* Console.log(chalk.dim(`Using analysis tool: ${toolCommand}`));
 
     // Load prompt
     const prompt = yield* loadPrompt(options.prompt);
@@ -653,9 +657,9 @@ REQUIREMENTS:
 - The tags must be on their own lines
 - The first line inside the tags MUST be the robot header
 
-EXAMPLE:
+EXAMPLE FORMAT:
 <ji-response>
-:robot: Claude Code (Sonnet 4)
+:robot: [Your Tool Name] ([Your Model Name])
 
 h4. Summary
 This issue appears to...
