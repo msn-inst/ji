@@ -634,13 +634,16 @@ const analyzeIssueEffect = (
     const fullIssueXml = commentsXml ? issueXml.replace('</issue>', `${commentsXml}</issue>`) : issueXml;
 
     // Build input for tool
-    const systemPrompt = `CRITICAL FORMATTING REQUIREMENT:
+    const systemPrompt = `CRITICAL FORMATTING REQUIREMENTS:
 
-Your ENTIRE response must be wrapped in opening <ji-response> and closing </ji-response> tags EXACTLY like this:
+1. Your ENTIRE response must be wrapped in opening <ji-response> and closing </ji-response> tags EXACTLY like this:
 
 <ji-response>
 Your analysis goes here...
 </ji-response>
+
+2. The content inside the tags MUST start with the robot header in this exact format:
+:robot: [Tool Name] ([Model Name])
 
 REQUIREMENTS:
 - Use lowercase "ji-response" (not JI-Response, JI-RESPONSE, or ji-response with attributes)
@@ -648,16 +651,21 @@ REQUIREMENTS:
 - Put ALL content between the tags
 - Do NOT include any text before <ji-response> or after </ji-response>
 - The tags must be on their own lines
+- The first line inside the tags MUST be the robot header
 
 EXAMPLE:
 <ji-response>
-## Analysis
+:robot: Claude Code (Sonnet 4)
+
+h4. Summary
 This issue appears to...
 
-## Recommendations
+h4. Next steps
 1. First step...
 2. Second step...
 </ji-response>
+
+MANDATORY: The robot header is required for proper comment formatting in Jira.
 
 `;
     const fullInput = `${systemPrompt}\n\n${prompt}\n\n${fullIssueXml}`;
