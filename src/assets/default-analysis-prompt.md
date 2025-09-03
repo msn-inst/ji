@@ -15,8 +15,14 @@ If you're not in the relevant codebase, the analysis may be less accurate.
 **MANDATORY FORMAT**: Begin your response with exactly:
 :robot: [Tool Name] ([Model Name])
 
-Format:
-:robot: [Your Tool Name] ([Your Model Name])
+**CORRECT EXAMPLES**:
+:robot: Claude Code (Sonnet 4)
+:robot: Gemini CLI (1.5 Pro) 
+:robot: ChatGPT Plus (GPT-4)
+
+**WRONG FORMAT** (do not use):
+:robot: [Claude Code (Sonnet 4)]
+:robot: [Gemini (1.5 Pro)]
 
 **DO NOT** use the emoji 🤖 - use the text :robot: which will be converted automatically.
 
@@ -69,6 +75,27 @@ h4. Next steps
 ## Example Format
 
 <ji-response>
-:robot: [Your Tool Name] ([Your Model Name])
-[the body of the response]
+:robot: Claude Code (Sonnet 4)
+
+h4. Summary
+The line spacing inconsistency arises because the Comment Library uses a standard `<textarea>` element, while the main comment field is a TinyMCE rich text editor. Newlines in a `<textarea>` are rendered differently than the `<p>` tags used by TinyMCE for paragraphs, causing a visual mismatch in the line-height during comment composition.
+
+h4. Affected components
+* SpeedGrader
+* Comment Library
+
+h4. Key files
+* `app/views/shared/media_comment_form.html.erb`: This file contains the main media comment form, including the TinyMCE editor instance used for submission comments in SpeedGrader.
+* `ui/src/apps/speedgrader/CommentLibrary/CommentLibraryForm.tsx`: This React component renders the form for adding or editing a comment within the Comment Library, which includes the `<textarea>` element with the inconsistent spacing.
+* `ui/src/apps/speedgrader/CommentLibrary/CommentLibraryManager.tsx`: The parent component that manages the state and functionality of the Comment Library, including rendering the `CommentLibraryForm`.
+
+h4. Proposal
+* Replace the `<textarea>` in CommentLibraryForm with a TinyMCE instance to maintain consistency
+* Alternatively, standardize line-height CSS properties between both editors
+* Update CommentLibraryManager to handle rich text content from the Comment Library
+
+h4. Next steps
+* Examine the TinyMCE configuration in media_comment_form.html.erb
+* Update CommentLibraryForm.tsx to use TinyMCE or match its styling
+* Test comment rendering consistency between both interfaces
 </ji-response>
