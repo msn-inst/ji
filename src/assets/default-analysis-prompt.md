@@ -15,10 +15,8 @@ If you're not in the relevant codebase, the analysis may be less accurate.
 **MANDATORY FORMAT**: Begin your response with exactly:
 :robot: [Tool Name] ([Model Name])
 
-Examples:
-:robot: Claude Code (Sonnet 4)
-:robot: Gemini (Gemini 2.5 Flash)
-:robot: OpenCode (GPT-4)
+Format:
+:robot: [Your Tool Name] ([Your Model Name])
 
 **DO NOT** use the emoji 🤖 - use the text :robot: which will be converted automatically.
 
@@ -68,9 +66,9 @@ h4. Next steps
 
 **CRITICAL**: Output your response in an opening <ji-response> and closing </ji-response> tag. The contents inside the tags MUST start with :robot: [Tool Name] ([Model Name]) as shown in the examples above.
 
-## Example
+## Example Format
 
 <ji-response>
-:robot: Gemini (Gemini 2.5 Flash)
+:robot: [Your Tool Name] ([Your Model Name])
 [the body of the response]
 </ji-response>
