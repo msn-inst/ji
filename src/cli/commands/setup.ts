@@ -23,12 +23,46 @@ const verifyCredentials = (config: { jiraUrl: string; email: string; apiToken: s
     },
     catch: (error) => {
       if (error instanceof Error) {
+        // Authentication/permission errors
         if (error.message.includes('401')) {
           return new Error('Invalid credentials. Please check your email and API token.');
         }
-        if (error.message.includes('ENOTFOUND')) {
-          return new Error('Could not connect to Jira. Please check the URL.');
+        if (error.message.includes('403')) {
+          return new Error('Access denied. Please verify your credentials and Jira permissions.');
         }
+
+        // Network/hostname errors
+        if (error.message.includes('ENOTFOUND')) {
+          return new Error(
+            `Hostname not found. Please check that the Jira URL is correct.\nExample: https://company.atlassian.net (without /rest/api/ paths)`,
+          );
+        }
+        if (error.message.includes('ECONNREFUSED')) {
+          return new Error(
+            `Connection refused. The server may be down or the port may be incorrect.\nPlease verify the URL and try again.`,
+          );
+        }
+        if (error.message.includes('ETIMEDOUT')) {
+          return new Error(
+            `Connection timed out. Please check:\n• Your internet connection\n• The Jira server URL\n• Any firewall or VPN settings`,
+          );
+        }
+        if (error.message.includes('certificate') || error.message.includes('SSL')) {
+          return new Error(`SSL/Certificate error. Please ensure the URL uses HTTPS and the certificate is valid.`);
+        }
+
+        // URL format errors
+        if (error.message.includes('Invalid URL') || error.message.includes('fetch failed')) {
+          return new Error(
+            `Invalid URL format. Please use the full URL including https://\nExample: https://company.atlassian.net`,
+          );
+        }
+
+        // Generic network errors
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          return new Error(`Network error: ${error.message}\nPlease check your connection and the Jira server URL.`);
+        }
+
         return error;
       }
       return new Error('Unknown error occurred');
@@ -135,9 +169,14 @@ const setupEffect = () =>
               });
 
               // API Token
+              const apiTokenMessage = existingConfig?.apiToken
+                ? `API Token ${chalk.dim('(press Enter to keep existing)')}`
+                : 'API Token';
+
               const apiToken =
                 (await password({
-                  message: 'API Token',
+                  message: apiTokenMessage,
+                  mask: true, // Show * characters as user types
                 })) ||
                 existingConfig?.apiToken ||
                 '';
