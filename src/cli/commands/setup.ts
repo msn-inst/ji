@@ -135,9 +135,14 @@ const setupEffect = () =>
               });
 
               // API Token
+              const apiTokenMessage = existingConfig?.apiToken
+                ? `API Token ${chalk.dim('(press Enter to keep existing)')}`
+                : 'API Token';
+
               const apiToken =
                 (await password({
-                  message: 'API Token',
+                  message: apiTokenMessage,
+                  mask: true, // Show * characters as user types
                 })) ||
                 existingConfig?.apiToken ||
                 '';
