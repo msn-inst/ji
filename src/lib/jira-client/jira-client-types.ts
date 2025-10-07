@@ -2,6 +2,7 @@ import { Schema } from 'effect';
 
 // Schema definitions
 export const IssueSchema = Schema.Struct({
+  id: Schema.String,
   key: Schema.String,
   self: Schema.String,
   fields: Schema.Unknown, // Accept any fields structure
@@ -51,6 +52,7 @@ export const SprintsResponseSchema = Schema.Struct({
 
 // Type definitions
 export interface Issue {
+  id: string;
   key: string;
   self: string;
   fields: {
@@ -71,6 +73,29 @@ export interface Issue {
 
 export type Board = Schema.Schema.Type<typeof BoardSchema>;
 export type Sprint = Schema.Schema.Type<typeof SprintSchema>;
+
+export type PRStatus = 'OPEN' | 'MERGED' | 'DECLINED' | 'UNKNOWN';
+
+export type PullRequest =
+  | {
+      url: string;
+      status: PRStatus;
+      repo: `${string}/${string}`;
+      number: number;
+    }
+  | {
+      url: string;
+      status: PRStatus;
+    };
+
+export interface DevStatusResponse {
+  detail: Array<{
+    pullRequests: Array<{
+      url: string;
+      status: string;
+    }>;
+  }>;
+}
 
 // Error types for Jira operations
 export class JiraError extends Error {

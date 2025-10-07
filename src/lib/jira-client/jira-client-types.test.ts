@@ -13,6 +13,7 @@ describe('jira-client-types schemas', () => {
   describe('IssueSchema', () => {
     it('should validate valid issue objects', async () => {
       const validIssue = {
+        id: '12345',
         key: 'PROJ-123',
         self: 'https://company.atlassian.net/rest/api/2/issue/12345',
         fields: {
@@ -29,6 +30,7 @@ describe('jira-client-types schemas', () => {
 
     it('should accept any fields structure', async () => {
       const issueWithComplexFields = {
+        id: '456',
         key: 'ISSUE-456',
         self: 'https://test.com/api/issue/456',
         fields: {
@@ -46,8 +48,9 @@ describe('jira-client-types schemas', () => {
 
     it('should reject objects missing required fields', async () => {
       const invalidIssues = [
-        { self: 'url', fields: {} }, // missing key
-        { key: 'KEY-123' }, // missing self and fields
+        { id: '1', self: 'url', fields: {} }, // missing key
+        { id: '1', key: 'KEY-123' }, // missing self and fields
+        { key: 'KEY-123', self: 'url', fields: {} }, // missing id
         {}, // missing all
       ];
 
@@ -59,8 +62,9 @@ describe('jira-client-types schemas', () => {
 
     it('should reject objects with wrong field types', async () => {
       const invalidIssues = [
-        { key: 123, self: 'url', fields: {} }, // key not string
-        { key: 'KEY-123', self: null, fields: {} }, // self not string
+        { id: '1', key: 123, self: 'url', fields: {} }, // key not string
+        { id: '1', key: 'KEY-123', self: null, fields: {} }, // self not string
+        { id: 123, key: 'KEY-123', self: 'url', fields: {} }, // id not string
       ];
 
       for (const invalidIssue of invalidIssues) {
@@ -75,11 +79,13 @@ describe('jira-client-types schemas', () => {
       const validSearchResult = {
         issues: [
           {
+            id: '1',
             key: 'PROJ-1',
             self: 'url1',
             fields: { summary: 'Issue 1' },
           },
           {
+            id: '2',
             key: 'PROJ-2',
             self: 'url2',
             fields: { summary: 'Issue 2' },
@@ -127,8 +133,8 @@ describe('jira-client-types schemas', () => {
     it('should reject search results with invalid issues', async () => {
       const invalidSearchResult = {
         issues: [
-          { key: 'VALID-1', self: 'url', fields: {} },
-          { key: 'INVALID' }, // missing self and fields
+          { id: '1', key: 'VALID-1', self: 'url', fields: {} },
+          { key: 'INVALID' }, // missing id, self and fields
         ],
         startAt: 0,
         maxResults: 50,
@@ -445,6 +451,7 @@ describe('jira-client-types schemas', () => {
       const searchResultWithBoards = {
         issues: [
           {
+            id: '123',
             key: 'PROJ-123',
             self: 'https://company.atlassian.net/rest/api/2/issue/123',
             fields: {

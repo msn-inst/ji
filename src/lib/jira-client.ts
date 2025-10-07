@@ -97,6 +97,10 @@ export class JiraClient extends JiraClientBase {
     return this.issuesClient.getCustomFieldsEffect();
   }
 
+  getIssuePullRequestsEffect(issueKey: string, applicationType?: string) {
+    return this.issuesClient.getIssuePullRequestsEffect(issueKey, applicationType);
+  }
+
   // ============= Comment Operations =============
   async addComment(issueKey: string, comment: string) {
     return this.commentsClient.addComment(issueKey, comment);

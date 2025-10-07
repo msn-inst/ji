@@ -9,6 +9,8 @@ import { viewIssue } from './commands/issue.js';
 import { showIssueLog } from './commands/log.js';
 import { showMyIssues, takeIssue } from './commands/mine.js';
 import { openCommand } from './commands/open.js';
+import { type Platform, PlatformSchema, showPullRequests } from './commands/pr.js';
+import { Schema } from 'effect';
 import { setup } from './commands/setup.js';
 // import { initializeSetup } from './commands/setup.js'; // Disabled due to TypeScript errors
 import { showSprint } from './commands/sprint.js';
@@ -24,21 +26,16 @@ ${chalk.yellow('Usage:')}
   ji issue <subcommand> [options]
 
 ${chalk.yellow('Subcommands:')}
-  view <issue-key>          View issue details
+  view <issue-key>          View issue details (use --xml for LLM format)
+  pr <issue-key>            View linked pull requests
 
-
-${chalk.yellow('Options:')}
-  --xml                     Output in XML format for LLM parsing
-  --json                    Alias for --xml (deprecated)
-  --help                    Show this help message
-
-${chalk.yellow('Note:')}
-  By default, 'ji issue view' shows pretty colored output.
-  Use --xml for LLM-friendly XML output.
 ${chalk.yellow('Examples:')}
-  ji issue view EVAL-123    # View issue with pretty output
-  ji issue view EVAL-123 --xml # View issue in XML format
-  ji sprint ABC             # Show current sprint for project ABC
+  ji issue view EVAL-123         # View issue with pretty output
+  ji issue view EVAL-123 --xml   # View issue in XML format
+  ji issue pr EVAL-123           # Show PR URLs for issue
+  ji issue pr EVAL-123 --json    # Show PRs as JSON
+
+Run 'ji issue view --help' or 'ji issue pr --help' for subcommand-specific options.
 `);
 }
 
@@ -351,6 +348,29 @@ ${chalk.yellow('Examples:')}
 `);
 }
 
+function showPrHelp() {
+  console.log(`
+${chalk.bold('ji issue pr - View linked pull requests')}
+
+${chalk.yellow('Usage:')}
+  ji issue pr <issue-key> [options]
+  ji pr <issue-key> [options]
+
+${chalk.yellow('Description:')}
+  View pull request URLs linked to a Jira issue.
+
+${chalk.yellow('Options:')}
+  --platform <type>         Development tool integration: github (default), bitbucket, gitlab
+  --json                    Output as JSON
+  --help                    Show this help message
+
+${chalk.yellow('Examples:')}
+  ji pr EVAL-123
+  ji pr EVAL-123 --json
+  ji pr ZIS-576 --platform bitbucket
+`);
+}
+
 function showHelp() {
   console.log(`
 ${chalk.bold('ji - Jira CLI')}
@@ -364,6 +384,7 @@ ${chalk.yellow('Issues:')}
   ji take <issue-key>                  Assign an issue to yourself
   ji done <issue-key>                  Mark an issue as Done
   ji open <issue-key>                  Open issue in browser
+  ji pr <issue-key>                    View linked pull requests (alias)
   ji comment <issue-key> [comment]     Add a comment to an issue
   ji analyze <issue-key-or-url>        Analyze issue with AI
   ji log <issue-key>                   Interactive comment viewer/editor
@@ -371,6 +392,7 @@ ${chalk.yellow('Issues:')}
   ji <issue-key> --xml                 View issue in XML format
 
   ji issue view <issue-key>            View issue details (alias)
+  ji issue pr <issue-key>              View linked pull requests
   ji issue sync <project-key>          Sync all issues from a project
 
 ${chalk.yellow('Boards & Sprints:')}
@@ -578,8 +600,19 @@ async function main() {
 
         if (subArgs[0] === 'view' && subArgs[1]) {
           await viewIssue(subArgs[1], { xml: args.includes('--xml'), json: args.includes('--json') });
+        } else if (subArgs[0] === 'pr' && subArgs[1]) {
+          const platformIndex = args.findIndex((arg) => arg === '--platform');
+          const platformValue =
+            platformIndex !== -1 && platformIndex + 1 < args.length ? args[platformIndex + 1] : undefined;
+          const platform = platformValue
+            ? (Schema.decodeUnknownSync(PlatformSchema)(platformValue) as Platform)
+            : undefined;
+          await showPullRequests(subArgs[1], {
+            json: args.includes('--json'),
+            platform,
+          });
         } else {
-          console.error('Invalid issue command. Use "ji issue view <key>"');
+          console.error('Invalid issue command. Use "ji issue view <key>" or "ji issue pr <key>"');
           showIssueHelp();
           process.exit(1);
         }
@@ -625,6 +658,30 @@ async function main() {
           process.exit(0);
         }
         await statusCommand();
+        break;
+
+      case 'pr':
+        if (args.includes('--help')) {
+          showPrHelp();
+          process.exit(0);
+        }
+        if (!subArgs[0]) {
+          console.error('Please specify an issue key');
+          showPrHelp();
+          process.exit(1);
+        }
+        {
+          const platformIndex = args.findIndex((arg) => arg === '--platform');
+          const platformValue =
+            platformIndex !== -1 && platformIndex + 1 < args.length ? args[platformIndex + 1] : undefined;
+          const platform = platformValue
+            ? (Schema.decodeUnknownSync(PlatformSchema)(platformValue) as Platform)
+            : undefined;
+          await showPullRequests(subArgs[0], {
+            json: args.includes('--json'),
+            platform,
+          });
+        }
         break;
 
       default:
