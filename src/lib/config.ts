@@ -26,6 +26,7 @@ const ConfigSchema = Schema.Struct({
   apiToken: Schema.String.pipe(Schema.minLength(1)),
   analysisCommand: Schema.optional(Schema.String), // Command for analysis tool (e.g., "claude -p")
   defaultProject: Schema.optional(Schema.String), // Default project key (e.g., "PROJ")
+  safe: Schema.optional(Schema.Boolean), // Prevent non-read-only API calls when true
 });
 
 export type Config = Schema.Schema.Type<typeof ConfigSchema>;

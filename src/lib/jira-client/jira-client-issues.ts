@@ -1,5 +1,5 @@
 import { Effect, pipe, Schema } from 'effect';
-import { JiraClientBase } from './jira-client-base.js';
+import { JiraClientBase, type SafeModeError } from './jira-client-base.js';
 import {
   AuthenticationError,
   type DevStatusResponse,
@@ -367,17 +367,21 @@ export class JiraClientIssues extends JiraClientBase {
   transitionIssueEffect(
     issueKey: string,
     transitionId: string,
-  ): Effect.Effect<void, ValidationError | NotFoundError | NetworkError | AuthenticationError> {
+  ): Effect.Effect<void, ValidationError | NotFoundError | NetworkError | AuthenticationError | SafeModeError> {
     return pipe(
-      // Validate inputs
-      Effect.sync(() => {
-        if (!issueKey || !issueKey.match(/^[A-Z]+-\d+$/)) {
-          throw new ValidationError('Invalid issue key format. Expected format: PROJECT-123');
-        }
-        if (!transitionId || transitionId.trim().length === 0) {
-          throw new ValidationError('Transition ID cannot be empty');
-        }
-      }),
+      // Check safe mode
+      Effect.sync(() => this.checkSafeMode()),
+      Effect.flatMap(() =>
+        // Validate inputs
+        Effect.sync(() => {
+          if (!issueKey || !issueKey.match(/^[A-Z]+-\d+$/)) {
+            throw new ValidationError('Invalid issue key format. Expected format: PROJECT-123');
+          }
+          if (!transitionId || transitionId.trim().length === 0) {
+            throw new ValidationError('Transition ID cannot be empty');
+          }
+        }),
+      ),
       Effect.flatMap(() => {
         const url = `${this.config.jiraUrl}/rest/api/3/issue/${issueKey}/transitions`;
 
@@ -431,7 +435,7 @@ export class JiraClientIssues extends JiraClientBase {
    */
   closeIssueEffect(
     issueKey: string,
-  ): Effect.Effect<void, ValidationError | NotFoundError | NetworkError | AuthenticationError> {
+  ): Effect.Effect<void, ValidationError | NotFoundError | NetworkError | AuthenticationError | SafeModeError> {
     return pipe(
       this.getIssueTransitionsEffect(issueKey),
       Effect.flatMap((transitions) => {
@@ -462,17 +466,21 @@ export class JiraClientIssues extends JiraClientBase {
   assignIssueEffect(
     issueKey: string,
     accountId: string,
-  ): Effect.Effect<void, ValidationError | NotFoundError | NetworkError | AuthenticationError> {
+  ): Effect.Effect<void, ValidationError | NotFoundError | NetworkError | AuthenticationError | SafeModeError> {
     return pipe(
-      // Validate inputs
-      Effect.sync(() => {
-        if (!issueKey || !issueKey.match(/^[A-Z]+-\d+$/)) {
-          throw new ValidationError('Invalid issue key format. Expected format: PROJECT-123');
-        }
-        if (!accountId || accountId.trim().length === 0) {
-          throw new ValidationError('Account ID cannot be empty');
-        }
-      }),
+      // Check safe mode
+      Effect.sync(() => this.checkSafeMode()),
+      Effect.flatMap(() =>
+        // Validate inputs
+        Effect.sync(() => {
+          if (!issueKey || !issueKey.match(/^[A-Z]+-\d+$/)) {
+            throw new ValidationError('Invalid issue key format. Expected format: PROJECT-123');
+          }
+          if (!accountId || accountId.trim().length === 0) {
+            throw new ValidationError('Account ID cannot be empty');
+          }
+        }),
+      ),
       Effect.flatMap(() => {
         const url = `${this.config.jiraUrl}/rest/api/3/issue/${issueKey}/assignee`;
 
@@ -526,18 +534,7 @@ export class JiraClientIssues extends JiraClientBase {
   }
 
   async assignIssue(issueKey: string, accountId: string): Promise<void> {
-    const url = `${this.config.jiraUrl}/rest/api/3/issue/${issueKey}/assignee`;
-
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ accountId }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to assign issue: ${response.status} - ${errorText}`);
-    }
+    await Effect.runPromise(this.assignIssueEffect(issueKey, accountId));
   }
 
   /**

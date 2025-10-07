@@ -9,7 +9,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { Context, Effect, Layer, pipe, Ref } from 'effect';
 import type { Config as JiConfig } from '../config.js';
-import { ConfigError, DatabaseError, NetworkError } from './errors.js';
+import { ConfigError, DatabaseError, NetworkError, SafeModeError } from './errors.js';
 
 // ============= Configuration Layer =============
 export interface ConfigService {
@@ -156,16 +156,24 @@ export const DatabaseServiceLive = Layer.scoped(
 export interface HttpClientService {
   readonly request: <T>(url: string, options?: RequestInit) => Effect.Effect<T, NetworkError>;
   readonly get: <T>(url: string, headers?: Record<string, string>) => Effect.Effect<T, NetworkError>;
-  readonly post: <T>(url: string, body: unknown, headers?: Record<string, string>) => Effect.Effect<T, NetworkError>;
-  readonly put: <T>(url: string, body: unknown, headers?: Record<string, string>) => Effect.Effect<T, NetworkError>;
-  readonly delete: <T>(url: string, headers?: Record<string, string>) => Effect.Effect<T, NetworkError>;
+  readonly post: <T>(
+    url: string,
+    body: unknown,
+    headers?: Record<string, string>,
+  ) => Effect.Effect<T, NetworkError | SafeModeError>;
+  readonly put: <T>(
+    url: string,
+    body: unknown,
+    headers?: Record<string, string>,
+  ) => Effect.Effect<T, NetworkError | SafeModeError>;
+  readonly delete: <T>(url: string, headers?: Record<string, string>) => Effect.Effect<T, NetworkError | SafeModeError>;
 }
 
 export class HttpClientServiceTag extends Context.Tag('HttpClientService')<HttpClientServiceTag, HttpClientService>() {}
 
 export const HttpClientServiceLive = Layer.effect(
   HttpClientServiceTag,
-  Effect.sync(() => {
+  Effect.gen(function* () {
     // Prevent real HTTP calls in test environment unless explicitly allowed
     if (process.env.NODE_ENV === 'test' && !process.env.ALLOW_REAL_API_CALLS) {
       throw new Error(
@@ -175,7 +183,19 @@ export const HttpClientServiceLive = Layer.effect(
       );
     }
 
+    const configService = yield* ConfigServiceTag;
+    const config = yield* configService.getConfig.pipe(Effect.orElseSucceed(() => ({ safe: false }) as JiConfig));
+
     const defaultTimeout = 30000; // 30 seconds
+
+    const checkSafeMode = (): Effect.Effect<void, SafeModeError> =>
+      config.safe === true
+        ? Effect.fail(
+            new SafeModeError(
+              'Write operation blocked by safe mode. Set "safe": false in ~/.ji/config.json to allow write operations.',
+            ),
+          )
+        : Effect.void;
 
     const makeRequest = <T>(url: string, options?: RequestInit) =>
       Effect.tryPromise({
@@ -212,26 +232,40 @@ export const HttpClientServiceLive = Layer.effect(
       get: <T>(url: string, headers?: Record<string, string>) => makeRequest<T>(url, { method: 'GET', headers }),
 
       post: <T>(url: string, body: unknown, headers?: Record<string, string>) =>
-        makeRequest<T>(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-          },
-          body: JSON.stringify(body),
-        }),
+        pipe(
+          checkSafeMode(),
+          Effect.flatMap(() =>
+            makeRequest<T>(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...headers,
+              },
+              body: JSON.stringify(body),
+            }),
+          ),
+        ),
 
       put: <T>(url: string, body: unknown, headers?: Record<string, string>) =>
-        makeRequest<T>(url, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-          },
-          body: JSON.stringify(body),
-        }),
+        pipe(
+          checkSafeMode(),
+          Effect.flatMap(() =>
+            makeRequest<T>(url, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                ...headers,
+              },
+              body: JSON.stringify(body),
+            }),
+          ),
+        ),
 
-      delete: <T>(url: string, headers?: Record<string, string>) => makeRequest<T>(url, { method: 'DELETE', headers }),
+      delete: <T>(url: string, headers?: Record<string, string>) =>
+        pipe(
+          checkSafeMode(),
+          Effect.flatMap(() => makeRequest<T>(url, { method: 'DELETE', headers })),
+        ),
     };
   }),
 );

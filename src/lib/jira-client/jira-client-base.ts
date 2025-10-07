@@ -1,5 +1,9 @@
 import type { Config } from '../config.js';
 
+export class SafeModeError extends Error {
+  readonly _tag = 'SafeModeError';
+}
+
 export class JiraClientBase {
   protected config: Config;
 
@@ -22,5 +26,17 @@ export class JiraClientBase {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     };
+  }
+
+  /**
+   * Check if a write operation is allowed based on safe mode
+   * @throws {SafeModeError} if safe mode is enabled
+   */
+  protected checkSafeMode(): void {
+    if (this.config.safe === true) {
+      throw new SafeModeError(
+        'Write operation blocked by safe mode. Set "safe": false in ~/.ji/config.json to allow write operations.',
+      );
+    }
   }
 }
