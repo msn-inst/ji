@@ -7,6 +7,7 @@ import { Schema } from 'effect';
 
 // ============= Jira API Schemas =============
 export const IssueSchema = Schema.Struct({
+  id: Schema.String,
   key: Schema.String,
   self: Schema.String,
   fields: Schema.Unknown, // Accept any fields structure for flexibility

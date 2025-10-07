@@ -150,6 +150,7 @@ test('API response validation - handles malformed data gracefully', async () => 
     if (urlString.includes('/issue/MALFORMED-123')) {
       // Return malformed response that has key but missing fields
       const malformedIssue = {
+        id: '10001',
         key: 'MALFORMED-123',
         self: 'https://test.atlassian.net/rest/api/3/issue/MALFORMED-123',
         // Missing 'fields' property entirely
@@ -193,6 +194,7 @@ test('API response validation - handles missing fields property', async () => {
 
     if (urlString.includes('/issue/NULL-FIELDS-123')) {
       const issueWithNullFields = {
+        id: '10002',
         key: 'NULL-FIELDS-123',
         self: 'https://test.atlassian.net/rest/api/3/issue/NULL-FIELDS-123',
         fields: null, // Explicit null fields

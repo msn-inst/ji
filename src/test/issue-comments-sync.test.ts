@@ -120,6 +120,7 @@ describe('Issue Comments Sync', () => {
         ok: true,
         status: 200,
         json: async () => ({
+          id: '10123',
           key: 'TEST-123',
           self: 'https://test.atlassian.net/rest/api/3/issue/TEST-123',
           fields: {

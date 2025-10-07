@@ -218,6 +218,7 @@ src/
 │       ├── mine.ts           # Personal issues with filtering (API-only)
 │       ├── memory.ts         # Memory management
 │       ├── comment.ts        # Add comments to issues (Effect-based)
+│       ├── pr.ts             # View linked pull requests
 │       ├── board.ts          # Board and sprint management
 │       └── test.ts           # Testing framework (comprehensive Effect usage)
 └── lib/                      # Shared libraries
@@ -253,6 +254,7 @@ src/
 - ✅ Secure credential storage
 - ✅ `ji mine` command with powerful filtering (YAML output)
 - ✅ `ji take` command to assign issues to yourself
+- ✅ `ji pr` command to view linked pull requests
 - ✅ Memory management system (`ji remember`, `ji memories`)
 - ✅ Comprehensive testing framework (`ji test --setup`, `ji test`)
 - ✅ Effect-based error handling and type safety

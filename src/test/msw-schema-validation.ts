@@ -2,6 +2,7 @@ import { Schema } from 'effect';
 
 // Define a more specific Issue type for testing that matches what the actual API returns
 interface TestIssue {
+  id: string;
   key: string;
   self: string;
   fields: {
@@ -84,6 +85,7 @@ export function createValidIssue(overrides: Partial<TestIssue> = {}): TestIssue 
   const { fields: fieldOverrides, ...topLevelOverrides } = overrides;
 
   const defaultIssue: TestIssue = {
+    id: '10001',
     key: 'TEST-123',
     self: 'https://test.atlassian.net/rest/api/3/issue/TEST-123',
     fields: {

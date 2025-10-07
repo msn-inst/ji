@@ -5,6 +5,7 @@ import type { Issue } from '../lib/jira-client';
 // Uses dependency injection approach since Bun module mocking is limited
 
 const mockIssue: Issue = {
+  id: '10001',
   key: 'TEST-123',
   self: 'https://test.atlassian.net/rest/api/3/issue/TEST-123',
   fields: {

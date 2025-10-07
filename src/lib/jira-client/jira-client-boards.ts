@@ -190,6 +190,7 @@ export class JiraClientBoards extends JiraClientBase {
             // Map the agile API response to our Issue type
             return (data.issues || []).map((issue: unknown) => {
               const typedIssue = issue as {
+                id: string;
                 key: string;
                 self: string;
                 fields: {
@@ -204,6 +205,7 @@ export class JiraClientBoards extends JiraClientBase {
                 };
               };
               return {
+                id: typedIssue.id,
                 key: typedIssue.key,
                 self: typedIssue.self,
                 fields: {
@@ -347,6 +349,7 @@ export class JiraClientBoards extends JiraClientBase {
     // Map the agile API response to our Issue type
     return (data.issues || []).map((issue: unknown) => {
       const typedIssue = issue as {
+        id: string;
         key: string;
         self: string;
         fields: {
@@ -361,6 +364,7 @@ export class JiraClientBoards extends JiraClientBase {
         };
       };
       return {
+        id: typedIssue.id,
         key: typedIssue.key,
         self: typedIssue.self,
         fields: {

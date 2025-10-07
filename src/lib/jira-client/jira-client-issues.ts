@@ -2,11 +2,14 @@ import { Effect, pipe, Schema } from 'effect';
 import { JiraClientBase } from './jira-client-base.js';
 import {
   AuthenticationError,
+  type DevStatusResponse,
   ISSUE_FIELDS,
   type Issue,
   IssueSchema,
   NetworkError,
   NotFoundError,
+  type PRStatus,
+  type PullRequest,
   SearchResultSchema,
   ValidationError,
 } from './jira-client-types.js';
@@ -593,5 +596,77 @@ export class JiraClientIssues extends JiraClientBase {
   // Backward compatible version
   async getCustomFields(): Promise<Array<{ id: string; name: string; description?: string; type: string }>> {
     return Effect.runPromise(this.getCustomFieldsEffect());
+  }
+
+  getIssuePullRequestsEffect(
+    issueKey: string,
+    applicationType: string = 'github',
+  ): Effect.Effect<PullRequest[], ValidationError | NotFoundError | NetworkError | AuthenticationError> {
+    return pipe(
+      this.getIssueEffect(issueKey),
+      Effect.flatMap((issue) => {
+        const url = `${this.config.jiraUrl}/rest/dev-status/1.0/issue/detail?issueId=${issue.id}&applicationType=${applicationType}&dataType=pullrequest`;
+
+        return Effect.tryPromise({
+          try: async () => {
+            const response = await fetch(url, {
+              method: 'GET',
+              headers: this.getHeaders(),
+              signal: AbortSignal.timeout(10000),
+            });
+
+            if (response.status === 404) {
+              throw new NotFoundError(`No development information found for issue ${issueKey}`);
+            }
+
+            if (response.status === 401 || response.status === 403) {
+              const errorText = await response.text();
+              throw new AuthenticationError(
+                `Not authorized to view development information: ${response.status} - ${errorText}`,
+              );
+            }
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new NetworkError(`Failed to get pull requests: ${response.status} - ${errorText}`);
+            }
+
+            const data = (await response.json()) as DevStatusResponse;
+
+            return data.detail.flatMap((detail) =>
+              detail.pullRequests.map((pr) => {
+                const normalizedStatus = ['OPEN', 'MERGED', 'DECLINED'].includes(pr.status)
+                  ? (pr.status as PRStatus)
+                  : 'UNKNOWN';
+
+                const match = pr.url.match(/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)/);
+                return match
+                  ? {
+                      url: pr.url,
+                      status: normalizedStatus,
+                      repo: match[1] as `${string}/${string}`,
+                      number: Number.parseInt(match[2], 10),
+                    }
+                  : {
+                      url: pr.url,
+                      status: normalizedStatus,
+                    };
+              }),
+            );
+          },
+          catch: (error) => {
+            if (
+              error instanceof ValidationError ||
+              error instanceof NotFoundError ||
+              error instanceof AuthenticationError ||
+              error instanceof NetworkError
+            ) {
+              return error;
+            }
+            return new NetworkError(`Network error while getting pull requests: ${error}`);
+          },
+        });
+      }),
+    );
   }
 }
