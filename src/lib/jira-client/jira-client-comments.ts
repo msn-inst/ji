@@ -1,5 +1,5 @@
 import { Effect, pipe } from 'effect';
-import { JiraClientBase } from './jira-client-base.js';
+import { JiraClientBase, type SafeModeError } from './jira-client-base.js';
 import { AuthenticationError, NetworkError, NotFoundError, ValidationError } from './jira-client-types.js';
 
 export class JiraClientComments extends JiraClientBase {
@@ -44,17 +44,21 @@ export class JiraClientComments extends JiraClientBase {
   addCommentEffect(
     issueKey: string,
     comment: string,
-  ): Effect.Effect<void, ValidationError | NotFoundError | NetworkError | AuthenticationError> {
+  ): Effect.Effect<void, ValidationError | NotFoundError | NetworkError | AuthenticationError | SafeModeError> {
     return pipe(
-      // Validate inputs
-      Effect.sync(() => {
-        if (!issueKey || !issueKey.match(/^[A-Z]+-\d+$/)) {
-          throw new ValidationError('Invalid issue key format. Expected format: PROJECT-123');
-        }
-        if (!comment || comment.trim().length === 0) {
-          throw new ValidationError('Comment cannot be empty');
-        }
-      }),
+      // Check safe mode
+      Effect.sync(() => this.checkSafeMode()),
+      Effect.flatMap(() =>
+        // Validate inputs
+        Effect.sync(() => {
+          if (!issueKey || !issueKey.match(/^[A-Z]+-\d+$/)) {
+            throw new ValidationError('Invalid issue key format. Expected format: PROJECT-123');
+          }
+          if (!comment || comment.trim().length === 0) {
+            throw new ValidationError('Comment cannot be empty');
+          }
+        }),
+      ),
       Effect.flatMap(() => {
         // Use REST API v2 for posting comments to support wiki markup format
         const url = `${this.config.jiraUrl}/rest/api/2/issue/${issueKey}/comment`;

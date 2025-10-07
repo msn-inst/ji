@@ -167,6 +167,11 @@ export class JiraError extends JiError {
   readonly module = 'jira';
 }
 
+export class SafeModeError extends JiError {
+  readonly _tag = 'SafeModeError';
+  readonly module = 'config';
+}
+
 export class ConfluenceError extends JiError {
   readonly _tag = 'ConfluenceError';
   readonly module = 'confluence';

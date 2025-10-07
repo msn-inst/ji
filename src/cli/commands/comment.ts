@@ -197,7 +197,9 @@ const commentEffect = (issueKey: string, inlineComment?: string) =>
 export async function addComment(issueKey: string, inlineComment?: string) {
   try {
     await Effect.runPromise(commentEffect(issueKey, inlineComment));
-  } catch (_error) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(chalk.red('Error:'), message);
     process.exit(1);
   }
 }
